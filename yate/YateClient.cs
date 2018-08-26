@@ -35,6 +35,10 @@ namespace yate
             public const string RInstall = "%<install";
             public static readonly string SUninstall = "%>uninstall";
             public const string RUninstall = "%<uninstall";
+            public static readonly string SWatch = "%>watch";
+            public const string RWatch = "%<watch";
+            public static readonly string SUnwatch = "%>unwatch";
+            public const string RUnwatch = "%<unwatch";
         }
 
         public YateClient(string host, ushort port)
@@ -186,6 +190,18 @@ namespace yate
             return new InstallResult(_serializer.Decode(result[1]), _serializer.Decode(result[3]));
         }
 
+        public async Task<bool> WatchAsync(string name, CancellationToken cancellationToken)
+        {
+            var result = await SendAsync(Commands.RWatch, name, cancellationToken, Commands.SWatch, name);
+            return "true".Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
+        }
+
+        public async Task<bool> UnwatchAsync(string name, CancellationToken cancellationToken)
+        {
+            var result = await SendAsync(Commands.RUnwatch, name, cancellationToken, Commands.SUnwatch, name);
+            return "true".Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
+        }
+
         private async Task<InstallResult> InstallAsync(int? priority, string name, string filterName, string filterValue, CancellationToken cancellationToken)
         {
             var result = await SendAsync(Commands.RInstall, name, cancellationToken, Commands.SInstall, priority?.ToString()??String.Empty, name, filterName, filterValue);
@@ -250,10 +266,15 @@ namespace yate
                                 break;
                             case Commands.RMessage:
                                 parts[1] = _serializer.Decode(parts[1]);
-                                ProcessResponse(Commands.RMessage, parts[1], parts);
+                                if (!ProcessResponse(Commands.RMessage, parts[1], parts))
+                                {
+                                    var message = GetYateMessageEventArgs(parts);
+                                    OnWatch(message);
+                                }
                                 break;
                             case Commands.SMessage:
-                                OnMessageReceived(parts);
+                                var arg = GetYateMessageEventArgs(parts);
+                                OnMessageReceived(arg);
                                 break;
                             case Commands.RInstall:
                                 parts[2] = _serializer.Decode(parts[2]);
@@ -262,6 +283,14 @@ namespace yate
                             case Commands.RUninstall:
                                 parts[2] = _serializer.Decode(parts[2]);
                                 ProcessResponse(Commands.RUninstall, parts[2], parts);
+                                break;
+                            case Commands.RWatch:
+                                parts[1] = _serializer.Decode(parts[1]);
+                                ProcessResponse(Commands.RWatch, parts[1], parts);
+                                break;
+                            case Commands.RUnwatch:
+                                parts[1] = _serializer.Decode(parts[1]);
+                                ProcessResponse(Commands.RUnwatch, parts[1], parts);
                                 break;
                             default:
                                 throw new NotImplementedException();
@@ -276,14 +305,18 @@ namespace yate
             }
         }
 
-        protected virtual void OnMessageReceived(string[] parts)
+        private YateMessageEventArgs GetYateMessageEventArgs(string[] parts)
         {
             var resultParams = new List<Tuple<string, string>>();
             for (int i = 5; i < parts.Length; i++)
             {
                 resultParams.Add(_serializer.DecodeParameter(parts[i]));
             }
-            var message = new YateMessageEventArgs(_serializer.Decode(parts[1]), _serializer.Decode(parts[2]), _serializer.Decode(parts[3]), _serializer.Decode(parts[4]), resultParams);
+            return new YateMessageEventArgs(_serializer.Decode(parts[1]), _serializer.Decode(parts[2]), _serializer.Decode(parts[3]), _serializer.Decode(parts[4]), resultParams);
+        }
+
+        protected virtual void OnMessageReceived(YateMessageEventArgs message)
+        {
             var handler = MessageReceived;
             try
             {
@@ -299,14 +332,31 @@ namespace yate
             SendAsync(response, CancellationToken.None).GetAwaiter().GetResult();
         }
 
+        protected virtual void OnWatch(YateMessageEventArgs message)
+        {
+            var handler = Watch;
+            try
+            {
+                handler?.Invoke(this, message);
+            }
+            catch (Exception ex)
+            {
+                LogAsync(ex.Message, CancellationToken.None).GetAwaiter().GetResult();
+            }
+        }
+
         public event EventHandler<YateMessageEventArgs> MessageReceived;
 
-        private void ProcessResponse(string command, string key, string[] values)
+        public event EventHandler<YateMessageEventArgs> Watch;
+
+        private bool ProcessResponse(string command, string key, string[] values)
         {
             if (_eventQueue.TryRemove(GetKey(command, key), out var response))
             {
                 response.Values = values;
+                return true;
             }
+            return false;
         }
 
         private void OnError(string error)

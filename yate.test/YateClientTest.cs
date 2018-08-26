@@ -119,6 +119,39 @@ namespace eventphone.yate.test
             Assert.Equal("test", result);
         }
 
+        [Fact]
+        public async Task CanWatch()
+        {
+            await _testClient.ConnectAsync(RoleType.Global, CancellationToken.None);
+            _server.AckConnect();
+            var getlocal = _testClient.WatchAsync("test", CancellationToken.None);
+            _server.ReplyToMessage("%%>watch:test", "%%<watch:test:true");
+            var result = await getlocal;
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task CanUnwatch()
+        {
+            await _testClient.ConnectAsync(RoleType.Global, CancellationToken.None);
+            _server.AckConnect();
+            var getlocal = _testClient.UnwatchAsync("test", CancellationToken.None);
+            _server.ReplyToMessage("%%>unwatch:test", "%%<unwatch:test:true");
+            var result = await getlocal;
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task WatchMessageRaisesEvent()
+        {
+            await _testClient.ConnectAsync(RoleType.Global, CancellationToken.None);
+            _server.AckConnect();
+            var resetEvent = new ManualResetEventSlim(false);
+            _testClient.Watch += (s, e) => { resetEvent.Set(); };
+            _server.SendMessage("%%<message::true:call.execute::driver=dumb");
+            resetEvent.Wait();
+        }
+
         public void Dispose()
         {
             _client.Dispose();
