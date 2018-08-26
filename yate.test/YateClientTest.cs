@@ -73,10 +73,43 @@ namespace eventphone.yate.test
             _server.AckMessage("%%<message:123:false:test:false");
         }
 
+        [Fact]
+        public async Task CanInstall()
+        {
+            await _testClient.ConnectAsync(RoleType.Global, CancellationToken.None);
+            _server.AckConnect();
+            var install = _testClient.InstallAsync("test", CancellationToken.None);
+            _server.ReplyToMessage("%%>install::test", "%%<install:100:test:true");
+            var result = await install;
+            Assert.Equal(100, result.Priority);
+            Assert.True(result.Success);
+            install = _testClient.InstallAsync("test", CancellationToken.None);
+            _server.ReplyToMessage("%%>install::test", "%%<install:100:test:false");
+            result = await install;
+            Assert.False(result.Success);
+        }
+
+        [Fact]
+        public async Task CanUninstall()
+        {
+            await _testClient.ConnectAsync(RoleType.Global, CancellationToken.None);
+            _server.AckConnect();
+            var install = _testClient.UninstallAsync("test", CancellationToken.None);
+            _server.ReplyToMessage("%%>uninstall:test", "%%<uninstall:100:test:true");
+            var result = await install;
+            Assert.Equal(100, result.Priority);
+            Assert.True(result.Success);
+            install = _testClient.UninstallAsync("test", CancellationToken.None);
+            _server.ReplyToMessage("%%>uninstall:test", "%%<uninstall:100:test:false");
+            result = await install;
+            Assert.False(result.Success);
+        }
+
         public void Dispose()
         {
             _client.Dispose();
             _testClient.Dispose();
+            _server.Dispose();
         }
     }
 

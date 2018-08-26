@@ -20,6 +20,7 @@ namespace yate
         private Thread _reader;
         private bool _isclosed = false;
         private ConcurrentDictionary<string, YateResponse> _eventQueue = new ConcurrentDictionary<string, YateResponse>();
+        private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
 
         private static class Commands
         {
@@ -30,6 +31,10 @@ namespace yate
             public const string RError = "Error in";
             public const string SMessage = "%>message";
             public const string RMessage = "%<message";
+            public static readonly string SInstall = "%>install";
+            public const string RInstall = "%<install";
+            public static readonly string SUninstall = "%>uninstall";
+            public const string RUninstall = "%<uninstall";
         }
 
         public YateClient(string host, ushort port)
@@ -76,7 +81,7 @@ namespace yate
         /// </remarks>
         public async Task ConnectAsync(RoleType role, string channelId, string channelType, CancellationToken cancellationToken)
         {
-            await _client.ConnectAsync(_host, _port);
+            await _client.ConnectAsync(_host, _port).ConfigureAwait(false);
             string roleType;
             switch (role)
             {
@@ -100,7 +105,7 @@ namespace yate
             }
             _reader = new Thread(Read) { IsBackground = true, Name = "YateClientReader" };
             _reader.Start();
-            await SendAsync(Command(Commands.SConnect, roleType, channelId, channelType), cancellationToken);
+            await SendAsync(Command(Commands.SConnect, roleType, channelId, channelType), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -108,12 +113,12 @@ namespace yate
         /// </summary>
         public async Task LogAsync(string message, CancellationToken cancellationToken)
         {
-            await SendAsync(Command(Commands.SOutput) + ':' + message, cancellationToken);
+            await SendAsync(Command(Commands.SOutput) + ':' + message, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<string> GetLocalAsync(string parameter, CancellationToken cancellationToken)
         {
-            var result = await SendAsync(Commands.RSetLocal, parameter, cancellationToken, Commands.SSetLocal, parameter, String.Empty);
+            var result = await SendAsync(Commands.RSetLocal, parameter, cancellationToken, Commands.SSetLocal, parameter, String.Empty).ConfigureAwait(false);
             return result[2];
         }
 
@@ -129,7 +134,7 @@ namespace yate
             string id = Guid.NewGuid().ToString();
             var time = DateTimeOffset.Now.ToUnixTimeSeconds().ToString();
             var stringParams = new[] { Commands.SMessage, id, time, name, result }.Concat(parameter.Select(x => _serializer.Encode(x)));
-            var response = await SendAsync(Commands.RMessage, id, cancellationToken, stringParams.ToArray());
+            var response = await SendAsync(Commands.RMessage, id, cancellationToken, stringParams.ToArray()).ConfigureAwait(false);
             var resultParams = new List<Tuple<string, string>>();
             for (int i = 5; i < response.Length; i++)
             {
@@ -144,14 +149,46 @@ namespace yate
             };
         }
 
+        public Task<InstallResult> InstallAsync(string name, string filterName, CancellationToken cancellationToken)
+        {
+            return InstallAsync(null, name, filterName, null, cancellationToken);
+        }
+
+        public Task<InstallResult> InstallAsync(string name, CancellationToken cancellationToken)
+        {
+            return InstallAsync(null, name, null, null, cancellationToken);
+        }
+
+        public Task<InstallResult> InstallAsync(string name, string filterName, string filterValue, CancellationToken cancellationToken)
+        {
+            return InstallAsync(null, name, filterName, filterValue, cancellationToken);
+        }
+
+        public Task<InstallResult> InstallAsync(int priority, string name, string filterName, string filterValue, CancellationToken cancellationToken)
+        {
+            return InstallAsync((int?)priority, name, filterName, filterValue, cancellationToken);
+        }
+
+        public async Task<InstallResult> UninstallAsync(string name, CancellationToken cancellationToken)
+        {
+            var result = await SendAsync(Commands.RUninstall, name, cancellationToken, Commands.SUninstall, name);
+            return new InstallResult(_serializer.Decode(result[1]), _serializer.Decode(result[3]));
+        }
+
+        private async Task<InstallResult> InstallAsync(int? priority, string name, string filterName, string filterValue, CancellationToken cancellationToken)
+        {
+            var result = await SendAsync(Commands.RInstall, name, cancellationToken, Commands.SInstall, priority?.ToString()??String.Empty, name, filterName, filterValue);
+            return new InstallResult(_serializer.Decode(result[1]), _serializer.Decode(result[3]));
+        }
+
         private async Task<string[]> SendAsync(string responseCommand, string key, CancellationToken cancellationToken, params string[] parameter)
         {
             var response = new YateResponse();
             var eventKey = GetKey(responseCommand, key);
             if (!_eventQueue.TryAdd(eventKey, response))
                 throw new ArgumentException("this command is currently pending");
-            await SendAsync(Command(parameter), cancellationToken);
-            return await response.GetResponseAsync(cancellationToken);
+            await SendAsync(Command(parameter), cancellationToken).ConfigureAwait(false);
+            return await response.GetResponseAsync(cancellationToken).ConfigureAwait(false);
         }
 
         private string GetKey(string command, string key)
@@ -162,9 +199,17 @@ namespace yate
         private async Task SendAsync(string message, CancellationToken cancellationToken)
         {
             var buffer = Encoding.ASCII.GetBytes(message + '\n');
-            var stream = _client.GetStream();
-            await stream.WriteAsync(buffer, 0, buffer.Length, cancellationToken);
-            await stream.FlushAsync(cancellationToken);
+            await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                var stream = _client.GetStream();
+                await stream.WriteAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
+                await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                _writeLock.Release();
+            }
         }
 
         private string Command(params string[] parameter)
@@ -198,6 +243,14 @@ namespace yate
                                 break;
                             case Commands.SMessage:
                                 OnMessageReceived(parts);
+                                break;
+                            case Commands.RInstall:
+                                parts[2] = _serializer.Decode(parts[2]);
+                                ProcessResponse(Commands.RInstall, parts[2], parts);
+                                break;
+                            case Commands.RUninstall:
+                                parts[2] = _serializer.Decode(parts[2]);
+                                ProcessResponse(Commands.RUninstall, parts[2], parts);
                                 break;
                             default:
                                 throw new NotImplementedException();
