@@ -116,10 +116,21 @@ namespace yate
             await SendAsync(Command(Commands.SOutput) + ':' + message, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task<string> GetLocalAsync(string parameter, CancellationToken cancellationToken)
+        /// <summary>
+        /// query local parameter
+        /// </summary>
+        public Task<string> GetLocalAsync(string parameter, CancellationToken cancellationToken)
         {
-            var result = await SendAsync(Commands.RSetLocal, parameter, cancellationToken, Commands.SSetLocal, parameter, String.Empty).ConfigureAwait(false);
-            return result[2];
+            return SetLocalAsync(parameter, String.Empty, cancellationToken);
+        }
+
+        /// <summary>
+        /// requests the change of a local parameter
+        /// </summary>
+        public async Task<string> SetLocalAsync(string parameter, string value, CancellationToken cancellationToken)
+        {
+            var result = await SendAsync(Commands.RSetLocal, parameter, cancellationToken, Commands.SSetLocal, parameter, value).ConfigureAwait(false);
+            return _serializer.Decode(result[2]);
         }
 
         /// <summary>

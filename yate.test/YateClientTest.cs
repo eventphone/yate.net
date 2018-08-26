@@ -37,14 +37,6 @@ namespace eventphone.yate.test
         }
 
         [Fact]
-        public async Task CanGetLocal()
-        {
-            await CanConnect();
-            var response = await _client.GetLocalAsync("engine.cfgsuffix", CancellationToken.None);
-            Assert.Equal(".conf", response);
-        }
-
-        [Fact]
         public async Task CanSendMessage()
         {
             await CanConnect();
@@ -105,6 +97,28 @@ namespace eventphone.yate.test
             Assert.False(result.Success);
         }
 
+        [Fact]
+        public async Task CanGetLocal()
+        {
+            await _testClient.ConnectAsync(RoleType.Global, CancellationToken.None);
+            _server.AckConnect();
+            var getlocal = _testClient.GetLocalAsync("engine.cfgsuffix", CancellationToken.None);
+            _server.ReplyToMessage("%%>setlocal:engine.cfgsuffix:", "%%<setlocal:engine.cfgsuffix:.conf:true");
+            var result = await getlocal;
+            Assert.Equal(".conf", result);
+        }
+
+        [Fact]
+        public async Task CanSetLocal()
+        {
+            await _testClient.ConnectAsync(RoleType.Global, CancellationToken.None);
+            _server.AckConnect();
+            var getlocal = _testClient.SetLocalAsync("id", "test", CancellationToken.None);
+            _server.ReplyToMessage("%%>setlocal:id:test", "%%<setlocal:id:test:true");
+            var result = await getlocal;
+            Assert.Equal("test", result);
+        }
+
         public void Dispose()
         {
             _client.Dispose();
@@ -113,7 +127,7 @@ namespace eventphone.yate.test
         }
     }
 
-        public class TestServer:IDisposable
+    public class TestServer:IDisposable
     {
         private readonly TcpListener _listener;
         private readonly Task<TcpClient> _clientTask;
