@@ -225,7 +225,7 @@ namespace yate
 
         private async Task SendAsync(string message, CancellationToken cancellationToken)
         {
-            var buffer = Encoding.ASCII.GetBytes(message + '\n');
+            var buffer = Encoding.UTF8.GetBytes(message + '\n');
             await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
@@ -246,7 +246,7 @@ namespace yate
 
         private void Read()
         {
-            using(var reader = new StreamReader(_client.GetStream(), Encoding.ASCII))
+            using(var reader = new StreamReader(_client.GetStream(), Encoding.UTF8))
             while (!_isclosed)
             {
                 try
