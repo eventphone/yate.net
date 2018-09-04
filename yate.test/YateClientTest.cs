@@ -152,6 +152,26 @@ namespace eventphone.yate.test
             resetEvent.Wait();
         }
 
+        [Fact]
+        public async Task CanGetSipEngineStatus()
+        {
+            await _testClient.ConnectAsync(RoleType.Global, CancellationToken.None);
+            _server.AckConnect();
+            var result = _testClient.SendMessageAsync(new EngineStatusSip(), CancellationToken.None);
+            string id = null;
+            bool Validate(string message)
+            {
+                Assert.StartsWith("%%<message:", message);
+                id = message.Substring(11, message.IndexOf(':', 11) - 11);
+                Assert.Contains(":engine.status:", message);
+                return true;
+            }
+            _server.ReplyToMessage(Validate, ()=>$"%%<message:{id}:false:engine.status" +
+            $":name=sip,type=varchans,format=Status|Address|Peer;routed=386,routing=0,total=386,chans=3,transactions=0;sip/384=answered|172.24.24.4%z5060|ExtModule,sip/385=answered|172.24.24.3%z5060|ExtModule,sip/386=answered|172.24.24.6%z5060|ExtModule%M%J" +
+            $":module=sip" +
+            $":handlers=engine%z90,cdrbuild%z100,moh%z100,callgen%z100,isaccodec%z100,cdrcombine%z100,mysqldb%z110,openssl%z110,mux%z110,wave%z110,callfork%z110,tonedetect%z110,stun%z110,tone%z110,dumb%z110,yrtp%z110,conf%z110,extmodule%z110,regexroute%z110,sip%z110,pbx%z110,queues%z110,register%z110,monitoring%z110,park%z110,queuesnotify%z110,snmpagent%z110");
+        }
+
         public void Dispose()
         {
             _client.Dispose();
@@ -178,22 +198,37 @@ namespace eventphone.yate.test
             SendMessage(response);
         }
 
+        public void ReplyToMessage(Func<string,bool> expected, Func<string> response)
+        {
+            AckMessage(expected);
+            SendMessage(response);
+        }
+
         public void SendMessage(string message)
+        {
+            SendMessage(() => message);
+        }
+        public void SendMessage(Func<string> message)
         {
             var client = _clientTask.Result;
             var stream = client.GetStream();
-            stream.Write(Encoding.ASCII.GetBytes(message));
+            stream.Write(Encoding.UTF8.GetBytes(message()));
             stream.Write(new byte[] { 10 });
             stream.Flush();
         }
 
         public void AckMessage(string expected)
         {
+            AckMessage(x => expected == x);
+        }
+
+        public void AckMessage(Func<string,bool> expected)
+        {
             var client = _clientTask.Result;
             var stream = client.GetStream();
-            var reader = new StreamReader(stream, Encoding.ASCII);
+            var reader = new StreamReader(stream, Encoding.UTF8);
             var message = reader.ReadLine();
-            Assert.Equal(expected, message);
+            Assert.True(expected(message));
         }
 
         public void AckConnect()

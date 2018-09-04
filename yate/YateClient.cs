@@ -144,7 +144,7 @@ namespace yate
         /// <param name="result">default textual return value of the message</param>
         /// <param name="parameter">enumeration of the key-value pairs of the message</param>
         /// <returns></returns>
-        public async Task<YateMessage> SendMessageAsync(string name, string result, CancellationToken cancellationToken, params Tuple<string, string>[] parameter)
+        public async Task<YateMessageResponse> SendMessageAsync(string name, string result, CancellationToken cancellationToken, params Tuple<string, string>[] parameter)
         {
             string id = Guid.NewGuid().ToString();
             var time = DateTimeOffset.Now.ToUnixTimeSeconds().ToString();
@@ -155,13 +155,19 @@ namespace yate
             {
                 resultParams.Add(_serializer.DecodeParameter(response[i]));
             }
-            return new YateMessage
+            return new YateMessageResponse
             {
                 Id = response[1],
                 Handled = "true".Equals(response[2], StringComparison.OrdinalIgnoreCase),
                 Name = response[3],
                 Result = response[4],
             };
+        }
+
+        public async Task<T> SendMessageAsync<T>(IYateMessageResponse<T> message, CancellationToken cancellationToken)
+        {
+            var result = await SendMessageAsync(message.Name, message.Result, cancellationToken, message.Parameters.ToArray());
+            return message.ParseResponse(result, _serializer);
         }
 
         public Task<InstallResult> InstallAsync(string name, string filterName, CancellationToken cancellationToken)

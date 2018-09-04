@@ -3,8 +3,18 @@ using System.Collections.Generic;
 
 namespace yate
 {
+    public interface IYateMessageResponse<T>
+    {
+        T ParseResponse(YateMessageResponse response, YateSerializer serializer);
 
-    public class YateMessage
+        string Name { get; }
+
+        string Result { get; }
+
+        IEnumerable<Tuple<string,string>> Parameters { get; }
+    }
+
+    public class YateMessageResponse
     {
         /// <summary>
         /// same message ID string received trough %%>message
