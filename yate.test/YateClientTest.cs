@@ -1,12 +1,13 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using eventphone.yate;
+using eventphone.yate.Messages;
 
 namespace eventphone.yate.test
 {
@@ -113,9 +114,9 @@ namespace eventphone.yate.test
         {
             await _testClient.ConnectAsync(RoleType.Global, CancellationToken.None);
             _server.AckConnect();
-            var getlocal = _testClient.SetLocalAsync("id", "test", CancellationToken.None);
+            var setlocal = _testClient.SetLocalAsync("id", "test", CancellationToken.None);
             _server.ReplyToMessage("%%>setlocal:id:test", "%%<setlocal:id:test:true");
-            var result = await getlocal;
+            var result = await setlocal;
             Assert.Equal("test", result);
         }
 
@@ -124,10 +125,36 @@ namespace eventphone.yate.test
         {
             await _testClient.ConnectAsync(RoleType.Global, CancellationToken.None);
             _server.AckConnect();
-            var getlocal = _testClient.WatchAsync("test", CancellationToken.None);
+            var watch = _testClient.WatchAsync("test", CancellationToken.None);
             _server.ReplyToMessage("%%>watch:test", "%%<watch:test:true");
-            var result = await getlocal;
+            var result = await watch;
             Assert.True(result);
+        }
+
+        [Fact]
+        public async Task CanWatchWithCallback()
+        {
+            var invoked = false;
+            await _testClient.ConnectAsync(RoleType.Global, CancellationToken.None);
+            _server.AckConnect();
+            var resetEvent = new AutoResetEvent(false);
+            _testClient.Watch += (s, e) => { resetEvent.Set(); };
+            var watch = _testClient.WatchAsync("test", Callback, CancellationToken.None);
+            _server.ReplyToMessage("%%>watch:test", "%%<watch:test:true");
+            var result = await watch;
+            Assert.True(result);
+            _server.SendMessage("%%<message:123:321:foo:false");
+            resetEvent.WaitOne();
+            Assert.False(invoked);
+            _server.SendMessage("%%<message:123:321:test:false");
+            resetEvent.WaitOne();
+            Assert.True(invoked);
+            
+            void Callback(YateMessageEventArgs e)
+            {
+                Assert.Equal("test", e.Name);
+                invoked = true;
+            }
         }
 
         [Fact]
@@ -161,15 +188,21 @@ namespace eventphone.yate.test
             string id = null;
             bool Validate(string message)
             {
-                Assert.StartsWith("%%<message:", message);
+                Assert.StartsWith("%%>message:", message);
                 id = message.Substring(11, message.IndexOf(':', 11) - 11);
                 Assert.Contains(":engine.status:", message);
                 return true;
             }
             _server.ReplyToMessage(Validate, ()=>$"%%<message:{id}:false:engine.status" +
-            $":name=sip,type=varchans,format=Status|Address|Peer;routed=386,routing=0,total=386,chans=3,transactions=0;sip/384=answered|172.24.24.4%z5060|ExtModule,sip/385=answered|172.24.24.3%z5060|ExtModule,sip/386=answered|172.24.24.6%z5060|ExtModule%M%J" +
-            $":module=sip" +
-            $":handlers=engine%z90,cdrbuild%z100,moh%z100,callgen%z100,isaccodec%z100,cdrcombine%z100,mysqldb%z110,openssl%z110,mux%z110,wave%z110,callfork%z110,tonedetect%z110,stun%z110,tone%z110,dumb%z110,yrtp%z110,conf%z110,extmodule%z110,regexroute%z110,sip%z110,pbx%z110,queues%z110,register%z110,monitoring%z110,park%z110,queuesnotify%z110,snmpagent%z110");
+            ":name=sip,type=varchans,format=Status|Address|Peer;routed=386,routing=0,total=386,chans=3,transactions=0;sip/384=answered|172.24.24.4%z5060|ExtModule,sip/385=answered|172.24.24.3%z5060|ExtModule,sip/386=answered|172.24.24.6%z5060|ExtModule%M%J" +
+            ":module=sip" +
+            ":handlers=engine%z90,cdrbuild%z100,moh%z100,callgen%z100,isaccodec%z100,cdrcombine%z100,mysqldb%z110,openssl%z110,mux%z110,wave%z110,callfork%z110,tonedetect%z110,stun%z110,tone%z110,dumb%z110,yrtp%z110,conf%z110,extmodule%z110,regexroute%z110,sip%z110,pbx%z110,queues%z110,register%z110,monitoring%z110,park%z110,queuesnotify%z110,snmpagent%z110");
+            var response = await result;
+            Assert.Equal(3, response.Details.Count);
+            var last = response.Details.Last();
+            Assert.Equal("sip/386=answered", last["Status"]);
+            Assert.Equal("172.24.24.6:5060", last["Address"]);
+            Assert.Equal("ExtModule", last["Peer"]);
         }
 
         public void Dispose()

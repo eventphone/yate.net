@@ -21,6 +21,7 @@ namespace eventphone.yate
         private bool _isclosed = false;
         private ConcurrentDictionary<string, YateResponse> _eventQueue = new ConcurrentDictionary<string, YateResponse>();
         private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
+        private readonly ConcurrentDictionary<string, ConcurrentBag<Action<YateMessageEventArgs>>> _watchCallbacks;
 
         private static class Commands
         {
@@ -47,6 +48,8 @@ namespace eventphone.yate
             _client = new TcpClient();
             _host = host;
             _port = port;
+            _watchCallbacks = new ConcurrentDictionary<string, ConcurrentBag<Action<YateMessageEventArgs>>>();
+            Watch += InvokeWatchCallbacks;
         }
 
         /// <summary>
@@ -158,9 +161,10 @@ namespace eventphone.yate
             return new YateMessageResponse
             {
                 Id = response[1],
-                Handled = "true".Equals(response[2], StringComparison.OrdinalIgnoreCase),
-                Name = response[3],
-                Result = response[4],
+                Handled = "true".Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase),
+                Name = _serializer.Decode(response[3]),
+                Result = _serializer.Decode(response[4]),
+                Parameter = resultParams
             };
         }
 
@@ -200,6 +204,14 @@ namespace eventphone.yate
         {
             var result = await SendAsync(Commands.RWatch, name, cancellationToken, Commands.SWatch, name);
             return "true".Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
+        }
+
+        public async Task<bool> WatchAsync(string name, Action<YateMessageEventArgs> callback, CancellationToken cancellationToken)
+        {
+            var bag = _watchCallbacks.GetOrAdd(name, new ConcurrentBag<Action<YateMessageEventArgs>>());
+            bag.Add(callback);
+            var response = await SendAsync(Commands.RWatch, name, cancellationToken, Commands.SWatch, name);
+            return "true".Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase);
         }
 
         public async Task<bool> UnwatchAsync(string name, CancellationToken cancellationToken)
@@ -348,6 +360,17 @@ namespace eventphone.yate
             catch (Exception ex)
             {
                 LogAsync(ex.Message, CancellationToken.None).GetAwaiter().GetResult();
+            }
+        }
+
+        private void InvokeWatchCallbacks(object sender, YateMessageEventArgs e)
+        {
+            if (_watchCallbacks.TryGetValue(e.Name, out var bag))
+            {
+                foreach (var callback in bag)
+                {
+                    callback(e);
+                }
             }
         }
 

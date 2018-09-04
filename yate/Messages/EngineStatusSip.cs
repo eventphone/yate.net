@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using yate;
 
 namespace eventphone.yate.Messages
 {
@@ -32,6 +30,7 @@ namespace eventphone.yate.Messages
             var parts = response.Split(';');
             ParseInfo(parts[0], serializer);
             Stats = new SipStatistics(parts[1], serializer);
+            ParseDetails(parts[2]);
         }
 
         private void ParseInfo(string info, YateSerializer serializer)
@@ -52,13 +51,34 @@ namespace eventphone.yate.Messages
             }
         }
 
+        private void ParseDetails(string details)
+        {
+            var parts = details.Split(',');
+            var names = Format.Split('|');
+            var result = new IReadOnlyDictionary<string, string>[parts.Length];
+            for (var i = 0; i < parts.Length; i++)
+            {
+                var part = parts[i];
+                var values = part.Split('|');
+                var detail = new Dictionary<string,string>();
+                for (int j = 0; j < values.Length; j++)
+                {
+                    detail.Add(names[j], values[j]);
+                }
+                result[i] = detail;
+            }
+            Details = result;
+        }
+
         public string Name { get; private set; }
 
         public string Format { get; private set; }
 
         public SipStatistics Stats { get; private set; }
+        
+        public IReadOnlyCollection<IReadOnlyDictionary<string,string>> Details { get; private set; }
     }
-
+    
     public class SipStatistics
     {
         public SipStatistics(string stats, YateSerializer serializer)
