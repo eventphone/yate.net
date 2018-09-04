@@ -48,7 +48,7 @@ namespace eventphone.yate
             _host = host;
             _port = port;
             _watchCallbacks = new ConcurrentDictionary<string, ConcurrentBag<Action<YateMessageEventArgs>>>();
-            Watch += InvokeWatchCallbacks;
+            Watched += InvokeWatchCallbacks;
         }
 
         private string GetKey(string command, string key)

@@ -18,6 +18,19 @@ namespace eventphone.yate
         /// The role and direction of the connection is established and then this keyword cannot be used again on the same connection.
         /// There is no answer to this request - if it fails the engine will slam the connection shut.
         /// </remarks>
+        public Task ConnectAsync(CancellationToken cancellationToken)
+        {
+            return ConnectAsync(RoleType.Global, null, null, cancellationToken);
+        }
+
+        /// <summary>
+        /// As the conection is initiated from the external module the engine must be informed on the role of the connection.
+        /// This must be the first request sent over a newly established socket connection.
+        /// </summary>
+        /// <remarks>
+        /// The role and direction of the connection is established and then this keyword cannot be used again on the same connection.
+        /// There is no answer to this request - if it fails the engine will slam the connection shut.
+        /// </remarks>
         public Task ConnectAsync(RoleType role, CancellationToken cancellationToken)
         {
             return ConnectAsync(role, null, null, cancellationToken);

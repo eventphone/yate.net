@@ -108,7 +108,7 @@ namespace eventphone.yate
 
         protected virtual void OnWatch(YateMessageEventArgs message)
         {
-            var handler = Watch;
+            var handler = Watched;
             try
             {
                 handler?.Invoke(this, message);
@@ -131,7 +131,7 @@ namespace eventphone.yate
         }
 
         public event EventHandler<YateMessageEventArgs> MessageReceived;
-        public event EventHandler<YateMessageEventArgs> Watch;
+        public event EventHandler<YateMessageEventArgs> Watched;
 
         private bool ProcessResponse(string command, string key, string[] values)
         {
@@ -185,6 +185,14 @@ namespace eventphone.yate
             public async Task<string[]> GetResponseAsync(CancellationToken cancellationToken)
             {
                 await _resetEvent.WaitAsync(cancellationToken).ConfigureAwait(false);
+                if (_error != null)
+                    throw new YateException(Error);
+                return Values;
+            }
+
+            public string[] GetResponse()
+            {
+                _resetEvent.Wait();
                 if (_error != null)
                     throw new YateException(Error);
                 return Values;

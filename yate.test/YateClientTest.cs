@@ -138,7 +138,7 @@ namespace eventphone.yate.test
             await _testClient.ConnectAsync(RoleType.Global, CancellationToken.None);
             _server.AckConnect();
             var resetEvent = new AutoResetEvent(false);
-            _testClient.Watch += (s, e) => { resetEvent.Set(); };
+            _testClient.Watched += (s, e) => { resetEvent.Set(); };
             var watch = _testClient.WatchAsync("test", Callback, CancellationToken.None);
             _server.ReplyToMessage("%%>watch:test", "%%<watch:test:true");
             var result = await watch;
@@ -174,7 +174,7 @@ namespace eventphone.yate.test
             await _testClient.ConnectAsync(RoleType.Global, CancellationToken.None);
             _server.AckConnect();
             var resetEvent = new ManualResetEventSlim(false);
-            _testClient.Watch += (s, e) => { resetEvent.Set(); };
+            _testClient.Watched += (s, e) => { resetEvent.Set(); };
             _server.SendMessage("%%<message::true:call.execute::driver=dumb");
             resetEvent.Wait();
         }
