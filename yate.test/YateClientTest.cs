@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using yate;
+using eventphone.yate;
 
 namespace eventphone.yate.test
 {

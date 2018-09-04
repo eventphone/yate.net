@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace yate
+namespace eventphone.yate
 {
     [Serializable]
     public class MessageParseException : Exception

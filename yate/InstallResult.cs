@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace yate
+namespace eventphone.yate
 {
     public struct InstallResult
     {

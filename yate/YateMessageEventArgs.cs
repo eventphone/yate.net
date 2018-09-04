@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace yate
+namespace eventphone.yate
 {
     public class YateMessageEventArgs:EventArgs
     {

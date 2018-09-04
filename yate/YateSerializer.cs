@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Text;
 
-namespace yate
+namespace eventphone.yate
 {
     public class YateSerializer
     {

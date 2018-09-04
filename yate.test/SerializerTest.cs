@@ -1,6 +1,6 @@
 using System;
 using Xunit;
-using yate;
+using eventphone.yate;
 
 namespace eventphone.yate.test
 {

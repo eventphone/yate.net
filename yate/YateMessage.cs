@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace yate
+namespace eventphone.yate
 {
     public interface IYateMessageResponse<T>
     {
