@@ -122,8 +122,7 @@ namespace eventphone.yate
         {
             string id = Guid.NewGuid().ToString();
             var time = DateTimeOffset.Now.ToUnixTimeSeconds().ToString();
-            var stringParams = new[] {Commands.SMessage, id, time, name, result}.Concat(parameter.Select(x => _serializer.Encode(x)));
-            var response = await SendAsync(Commands.RMessage, id, cancellationToken, stringParams.ToArray()).ConfigureAwait(false);
+            var response = await SendAsync(Commands.RMessage, id, cancellationToken, parameter, Commands.SMessage, id, time, name, result).ConfigureAwait(false);
             var resultParams = new List<Tuple<string, string>>();
             for (int i = 5; i < response.Length; i++)
             {
@@ -197,13 +196,23 @@ namespace eventphone.yate
             return new InstallResult(_serializer.Decode(result[1]), _serializer.Decode(result[3]));
         }
 
-        private async Task<string[]> SendAsync(string responseCommand, string key, CancellationToken cancellationToken, params string[] parameter)
+        private Task<string[]> SendAsync(string responseCommand, string key, CancellationToken cancellationToken, params string[] parameter)
+        {
+            return SendAsync(responseCommand, key, cancellationToken, null, parameter);
+        }
+
+        private async Task<string[]> SendAsync(string responseCommand, string key, CancellationToken cancellationToken, Tuple<string,string>[] parameter, params string[] message)
         {
             var response = new YateResponse();
             var eventKey = GetKey(responseCommand, key);
             if (!_eventQueue.TryAdd(eventKey, response))
                 throw new ArgumentException("this command is currently pending");
-            await SendAsync(Command(parameter), cancellationToken).ConfigureAwait(false);
+            var command = Command(message);
+            if (parameter != null)
+            {
+                command += ':' + String.Join(":", parameter.Select(x => _serializer.Encode(x)));
+            }
+            await SendAsync(command, cancellationToken).ConfigureAwait(false);
             return await response.GetResponseAsync(cancellationToken).ConfigureAwait(false);
         }
 

@@ -191,6 +191,7 @@ namespace eventphone.yate.test
                 Assert.StartsWith("%%>message:", message);
                 id = message.Substring(11, message.IndexOf(':', 11) - 11);
                 Assert.Contains(":engine.status:", message);
+                Assert.Contains(":module=sip", message);
                 return true;
             }
             _server.ReplyToMessage(Validate, ()=>$"%%<message:{id}:false:engine.status" +
@@ -200,7 +201,7 @@ namespace eventphone.yate.test
             var response = await result;
             Assert.Equal(3, response.Details.Count);
             var last = response.Details.Last();
-            Assert.Equal("sip/386=answered", last["Status"]);
+            Assert.Equal("answered", last["Status"]);
             Assert.Equal("172.24.24.6:5060", last["Address"]);
             Assert.Equal("ExtModule", last["Peer"]);
         }

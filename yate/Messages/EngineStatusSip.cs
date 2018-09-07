@@ -30,7 +30,14 @@ namespace eventphone.yate.Messages
             var parts = response.Split(';');
             ParseInfo(parts[0], serializer);
             Stats = new SipStatistics(parts[1], serializer);
-            ParseDetails(parts[2]);
+            if (parts.Length > 2)
+            {
+                ParseDetails(parts[2]);
+            }
+            else
+            {
+                Details = new IReadOnlyDictionary<string, string>[0];
+            }
         }
 
         private void ParseInfo(string info, YateSerializer serializer)
@@ -63,6 +70,16 @@ namespace eventphone.yate.Messages
                 var detail = new Dictionary<string,string>();
                 for (int j = 0; j < values.Length; j++)
                 {
+                    if (names[j] == "Status")
+                    {
+                        var status = values[j].Split('=');
+                        if (status.Length == 2)
+                        {
+                            detail.Add("id", status[0]);
+                            detail.Add(names[j], status[1]);
+                            continue;
+                        }
+                    }
                     detail.Add(names[j], values[j]);
                 }
                 result[i] = detail;

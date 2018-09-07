@@ -95,9 +95,7 @@ namespace eventphone.yate
         {
             string id = Guid.NewGuid().ToString();
             var time = DateTimeOffset.Now.ToUnixTimeSeconds().ToString();
-            var stringParams =
-                new[] {Commands.SMessage, id, time, name, result}.Concat(parameter.Select(x => _serializer.Encode(x)));
-            var response = Send(Commands.RMessage, id, stringParams.ToArray());
+            var response = Send(Commands.RMessage, id, parameter, Commands.SMessage, id, time, name, result);
             var resultParams = new List<Tuple<string, string>>();
             for (int i = 5; i < response.Length; i++)
             {
@@ -174,11 +172,21 @@ namespace eventphone.yate
 
         private string[] Send(string responseCommand, string key, params string[] parameter)
         {
+            return Send(responseCommand, key, null, parameter);
+        }
+
+        private string[] Send(string responseCommand, string key, Tuple<string,string>[] parameter, params string[] message)
+        {
             var response = new YateResponse();
             var eventKey = GetKey(responseCommand, key);
             if (!_eventQueue.TryAdd(eventKey, response))
                 throw new ArgumentException("this command is currently pending");
-            Send(Command(parameter));
+            var command = Command(message);
+            if (parameter != null)
+            {
+                command += ':' + String.Join(":", parameter.Select(x => _serializer.Encode(x)));
+            }
+            Send(command);
             return response.GetResponse();
         }
 
