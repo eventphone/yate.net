@@ -35,12 +35,12 @@ namespace eventphone.yate
                             parts[1] = _serializer.Decode(parts[1]);
                             if (!ProcessResponse(Commands.RMessage, parts[1], parts))
                             {
-                                var message = GetYateMessageEventArgs(parts);
+                                var message = GetYateRMessageEventArgs(parts);
                                 OnWatch(message);
                             }
                             break;
                         case Commands.SMessage:
-                            var arg = GetYateMessageEventArgs(parts);
+                            var arg = GetYateSMessageEventArgs(parts);
                             OnMessageReceived(arg);
                             break;
                         case Commands.RInstall:
@@ -72,7 +72,21 @@ namespace eventphone.yate
             }
         }
 
-        private YateMessageEventArgs GetYateMessageEventArgs(string[] parts)
+        private YateMessageEventArgs GetYateRMessageEventArgs(string[] parts)
+        {
+            var resultParams = GetMessageParameter(parts);
+            //%%<message:<id>:<processed>:[<name>]:<retvalue>[:<key>=<value>...]
+            return new YateMessageEventArgs(_serializer.Decode(parts[1]), _serializer.Decode(parts[2])=="true", _serializer.Decode(parts[3]), _serializer.Decode(parts[4]), resultParams);
+        }
+
+        private YateMessageEventArgs GetYateSMessageEventArgs(string[] parts)
+        {
+            var resultParams = GetMessageParameter(parts);
+            //%%>message:<id>:<time>:<name>:<retvalue>[:<key>=<value>...]
+            return new YateMessageEventArgs(_serializer.Decode(parts[1]), _serializer.Decode(parts[2]), _serializer.Decode(parts[3]), _serializer.Decode(parts[4]), resultParams);
+        }
+
+        private Dictionary<string, string> GetMessageParameter(string[] parts)
         {
             var resultParams = new Dictionary<string, string>();
             for (int i = 5; i < parts.Length; i++)
@@ -80,7 +94,7 @@ namespace eventphone.yate
                 var parameter = _serializer.DecodeParameter(parts[i]);
                 resultParams.Add(parameter.Item1, parameter.Item2);
             }
-            return new YateMessageEventArgs(_serializer.Decode(parts[1]), _serializer.Decode(parts[2]), _serializer.Decode(parts[3]), _serializer.Decode(parts[4]), resultParams);
+            return resultParams;
         }
 
         protected virtual void OnMessageReceived(YateMessageEventArgs message)

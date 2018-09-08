@@ -6,15 +6,26 @@ namespace eventphone.yate
 {
     public class YateMessageEventArgs:EventArgs
     {
-        public YateMessageEventArgs(string id, string time, string name, string result, IDictionary<string, string> parameter)
+        public YateMessageEventArgs(string id, bool processed, string name, string result, IDictionary<string, string> parameter)
+            :this(id, name, result, parameter)
         {
-            Id = id;
-            Name = name;
-            Result = result;
+            Handled = processed;
+        }
+
+        public YateMessageEventArgs(string id, string time, string name, string result, IDictionary<string, string> parameter)
+            :this(id, name, result, parameter)
+        {
             if (Int64.TryParse(time, out var timestamp))
             {
                 Time = DateTimeOffset.FromUnixTimeSeconds(timestamp);
             }
+        }
+
+        private YateMessageEventArgs(string id, string name, string result, IDictionary<string, string> parameter)
+        {
+            Id = id;
+            Name = name;
+            Result = result;
             Parameter = parameter;
             NewParameter = new List<Tuple<string, string>>();
         }
@@ -32,7 +43,7 @@ namespace eventphone.yate
         public List<Tuple<string, string>> NewParameter { get; }
 
         public bool Handled { get; set; }
-
+        
         public string GetParameter(string key, string fallback = null)
         {
             if (Parameter.TryGetValue(key, out var value))
