@@ -6,7 +6,7 @@ namespace eventphone.yate
 {
     public class YateMessageEventArgs:EventArgs
     {
-        public YateMessageEventArgs(string id, string time, string name, string result, IEnumerable<Tuple<string, string>> parameter)
+        public YateMessageEventArgs(string id, string time, string name, string result, IDictionary<string, string> parameter)
         {
             Id = id;
             Name = name;
@@ -15,7 +15,7 @@ namespace eventphone.yate
             {
                 Time = DateTimeOffset.FromUnixTimeSeconds(timestamp);
             }
-            Parameter = parameter.ToArray();
+            Parameter = parameter;
             NewParameter = new List<Tuple<string, string>>();
         }
 
@@ -27,10 +27,17 @@ namespace eventphone.yate
 
         public DateTimeOffset Time { get; }
 
-        public IReadOnlyList<Tuple<string, string>> Parameter { get; }
+        public IDictionary<string, string> Parameter { get; }
 
         public List<Tuple<string, string>> NewParameter { get; }
 
         public bool Handled { get; set; }
+
+        public string GetParameter(string key, string fallback = null)
+        {
+            if (Parameter.TryGetValue(key, out var value))
+                return value;
+            return fallback;
+        }
     }
 }

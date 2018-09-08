@@ -74,10 +74,11 @@ namespace eventphone.yate
 
         private YateMessageEventArgs GetYateMessageEventArgs(string[] parts)
         {
-            var resultParams = new List<Tuple<string, string>>();
+            var resultParams = new Dictionary<string, string>();
             for (int i = 5; i < parts.Length; i++)
             {
-                resultParams.Add(_serializer.DecodeParameter(parts[i]));
+                var parameter = _serializer.DecodeParameter(parts[i]);
+                resultParams.Add(parameter.Item1, parameter.Item2);
             }
             return new YateMessageEventArgs(_serializer.Decode(parts[1]), _serializer.Decode(parts[2]), _serializer.Decode(parts[3]), _serializer.Decode(parts[4]), resultParams);
         }

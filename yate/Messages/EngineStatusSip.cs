@@ -36,7 +36,7 @@ namespace eventphone.yate.Messages
             }
             else
             {
-                Details = new IReadOnlyDictionary<string, string>[0];
+                Details = new IDictionary<string, string>[0];
             }
         }
 
@@ -62,7 +62,7 @@ namespace eventphone.yate.Messages
         {
             var parts = details.Split(',');
             var names = Format.Split('|');
-            var result = new IReadOnlyDictionary<string, string>[parts.Length];
+            var result = new IDictionary<string, string>[parts.Length];
             for (var i = 0; i < parts.Length; i++)
             {
                 var part = parts[i];
@@ -93,7 +93,7 @@ namespace eventphone.yate.Messages
 
         public SipStatistics Stats { get; private set; }
         
-        public IReadOnlyCollection<IReadOnlyDictionary<string,string>> Details { get; private set; }
+        public IReadOnlyCollection<IDictionary<string,string>> Details { get; private set; }
     }
     
     public class SipStatistics

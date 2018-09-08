@@ -50,7 +50,7 @@ namespace eventphone.ystatus
 
         public Program()
         {
-            ChannelData = new ConcurrentDictionary<string, Dictionary<string, string>>();
+            ChannelData = new ConcurrentDictionary<string, IDictionary<string, string>>();
             FlashMessages = new ConcurrentDictionary<Guid, Tuple<string, string>>();
         }
 
@@ -110,43 +110,38 @@ namespace eventphone.ystatus
 
         private void UserUnregister(YateMessageEventArgs arg)
         {
-            var values = arg.Parameter.ToDictionary(x=>x.Item1, x=>x.Item2);
-            if (GetValueOrDefault(values, "username", String.Empty) != String.Empty)
+            if (arg.GetParameter("username") != null)
             {
-                FlashMessage("info", $"unregistered user {GetValueOrDefault(values, "username")} {GetValueOrDefault(values, "data")} / {GetValueOrDefault(values, "device")}");
+                FlashMessage("info", $"unregistered user {arg.GetParameter("username")} {arg.GetParameter("data", "?")} / {arg.GetParameter("device", "?")}");
             }
         }
 
         private void UserRegister(YateMessageEventArgs arg)
         {
-            var values = arg.Parameter.ToDictionary(x=>x.Item1, x=>x.Item2);
-            FlashMessage("info", $"registered user {GetValueOrDefault(values, "username")} {GetValueOrDefault(values, "data")} / {GetValueOrDefault(values, "device")}");
+            FlashMessage("info", $"registered user {arg.GetParameter("username", "?")} {arg.GetParameter("data", "?")} / {arg.GetParameter("device", "?")}");
         }
 
         private void UserAuth(YateMessageEventArgs arg)
         {
-            var values = arg.Parameter.ToDictionary(x=>x.Item1, x=>x.Item2);
-            if (!arg.Handled && GetValueOrDefault(values, "response", String.Empty) != String.Empty)
+            if (!arg.Handled && arg.GetParameter("response") != null)
             {
-                FlashMessage("warning", $"auth failed: {GetValueOrDefault(values, "username")}@{GetValueOrDefault(values, "realm")} / {GetValueOrDefault(values, "address")} / {GetValueOrDefault(values, "device")}");
+                FlashMessage("warning", $"auth failed: {arg.GetParameter("username", "?")}@{arg.GetParameter("realm", "?")} / {arg.GetParameter("address", "?")} / {arg.GetParameter("device", "?")}");
             }
         }
 
         private void ChanDisconnected(YateMessageEventArgs arg)
         {
-            var values = arg.Parameter.ToDictionary(x=>x.Item1, x=>x.Item2);
-            values.Add("ysm_status", "disconnected");
-            var id = GetValueOrDefault(values, "id");
-            UpdateChan(id, values);
+            arg.Parameter.Add("ysm_status", "disconnected");
+            var id = arg.GetParameter("id");
+            UpdateChan(id, arg.Parameter);
             RemoveChan(id);
         }
 
         private void ChanHangup(YateMessageEventArgs arg)
         {
-            var values = arg.Parameter.ToDictionary(x=>x.Item1, x=>x.Item2);
-            values.Add("ysm_status", "hungup");
-            var id = GetValueOrDefault(values, "id");
-            UpdateChan(id, values);
+            arg.Parameter.Add("ysm_status", "hungup");
+            var id = arg.GetParameter("id");
+            UpdateChan(id, arg.Parameter);
             RemoveChan(id);
         }
 
@@ -162,12 +157,11 @@ namespace eventphone.ystatus
 
         private void ChanUpdate(YateMessageEventArgs arg)
         {
-            var values = arg.Parameter.ToDictionary(x=>x.Item1, x=>x.Item2);
-            values.Add("ysm_status", GetValueOrDefault(values, "status", String.Empty));
-            UpdateChan(GetValueOrDefault(values, "id"), values);
+            arg.Parameter.Add("ysm_status", arg.GetParameter("status", String.Empty));
+            UpdateChan(arg.GetParameter("id"), arg.Parameter);
         }
 
-        private void UpdateChan(string id, Dictionary<string, string> values)
+        private void UpdateChan(string id, IDictionary<string, string> values)
         {
             ChannelData.AddOrUpdate(id, values, (_, e) => Merge(e, values));
             UpdateDisplay();
@@ -185,14 +179,14 @@ namespace eventphone.ystatus
             UpdateDisplay();
         }
 
-        private string GetValueOrDefault(IReadOnlyDictionary<string, string> dict, string key, string defaultValue = "?")
+        private string GetValueOrDefault(IDictionary<string, string> dict, string key, string defaultValue = "?")
         {
             if (dict.TryGetValue(key, out var value))
                 return value;
             return defaultValue;
         }
 
-        private Dictionary<TKey, TValue> Merge<TKey, TValue>(Dictionary<TKey, TValue> target, IDictionary<TKey, TValue> add)
+        private IDictionary<TKey, TValue> Merge<TKey, TValue>(IDictionary<TKey, TValue> target, IDictionary<TKey, TValue> add)
         {
             foreach (var value in add)
             {
@@ -204,7 +198,7 @@ namespace eventphone.ystatus
             return target;
         }
 
-        private ConcurrentDictionary<string, Dictionary<string,string>> ChannelData { get; }
+        private ConcurrentDictionary<string, IDictionary<string,string>> ChannelData { get; }
         private ConcurrentDictionary<Guid, Tuple<string, string>> FlashMessages { get; }
 
         private void UpdateDisplay()
