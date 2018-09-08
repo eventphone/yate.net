@@ -13,13 +13,15 @@ namespace ystatus.redis
     {
         private readonly ConnectionMultiplexer _redis;
         private readonly YateClient _yate;
-        private static string RedisPrefix = "yate:ystatus:";
+        private static string _redisChannelPrefix;
+        private static string _redisMessagePrefix;
 
-        static void Main(string[] args)
+        static void Main()
         {
             var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
             var configuration = builder.Build();
-            RedisPrefix += Environment.MachineName + ':';
+            _redisChannelPrefix = "yate:ystatus:channel:" + Environment.MachineName + ':';
+            _redisMessagePrefix = "yate:ystatus:message:" + Environment.MachineName + ':';
             using (var program = new Program(configuration))
             {
                 program.WaitForExit();
@@ -62,7 +64,7 @@ namespace ystatus.redis
                     hash[1] = new HashEntry("address", address);
                 if (detail.TryGetValue("Peer", out var peer))
                     hash[2] = new HashEntry("peerid", peer);
-                UpdateRedis(RedisPrefix + id, hash, TimeSpan.FromHours(1));
+                UpdateRedis(id, hash, TimeSpan.FromHours(1));
             }
         }
 
@@ -71,7 +73,7 @@ namespace ystatus.redis
             var id = arg.GetParameter("id");
             var values = GetHash(arg);
             values.Add(new HashEntry("ysm_status", arg.GetParameter("status", String.Empty)));
-            UpdateRedis(RedisPrefix + id, values, TimeSpan.FromHours(1));
+            UpdateRedis(id, values, TimeSpan.FromHours(1));
         }
 
         private void ChanHangup(YateMessageEventArgs arg)
@@ -79,7 +81,7 @@ namespace ystatus.redis
             var id = arg.GetParameter("id");
             var values = GetHash(arg);
             values.Add(new HashEntry("ysm_status", "hungup"));
-            UpdateRedis(RedisPrefix + id, values, TimeSpan.FromSeconds(6));
+            UpdateRedis(id, values, TimeSpan.FromSeconds(6));
         }
 
         private void ChanDisconnected(YateMessageEventArgs arg)
@@ -87,7 +89,7 @@ namespace ystatus.redis
             var id = arg.GetParameter("id");
             var values = GetHash(arg);
             values.Add(new HashEntry("ysm_status", "disconnected"));
-            UpdateRedis(RedisPrefix + id, values, TimeSpan.FromSeconds(6));
+            UpdateRedis(id, values, TimeSpan.FromSeconds(6));
         }
 
         private void UserAuth(YateMessageEventArgs arg)
@@ -113,14 +115,16 @@ namespace ystatus.redis
 
         private void FlashMessage(string level, string message)
         {
-            var key = RedisPrefix + level + ":" + Guid.NewGuid();
+            var key = _redisMessagePrefix + Guid.NewGuid();
             var redis = _redis.GetDatabase();
-            redis.StringSet(key, message, TimeSpan.FromSeconds(8), flags: CommandFlags.FireAndForget);
+            redis.HashSet(key, new[] {new HashEntry("level", level), new HashEntry("msg", message)}, CommandFlags.FireAndForget);
+            redis.KeyExpire(key, TimeSpan.FromSeconds(8), CommandFlags.FireAndForget);
         }
 
-        private void UpdateRedis(RedisKey key, IEnumerable<HashEntry> values, TimeSpan expire)
+        private void UpdateRedis(string id, IEnumerable<HashEntry> values, TimeSpan expire)
         {
             var redis = _redis.GetDatabase();
+            var key = _redisChannelPrefix + id;
             redis.HashSet(key, values.Where(x=>!x.Value.IsNull).ToArray(), CommandFlags.FireAndForget);
             redis.KeyExpire(key, expire, CommandFlags.FireAndForget);
         }
@@ -131,8 +135,13 @@ namespace ystatus.redis
             foreach (var endPoint in endpoints)
             {
                 var server = _redis.GetServer(endPoint);
-                var keys = server.Keys(pattern: RedisPrefix + '*');
                 var redis = _redis.GetDatabase();
+                var keys = server.Keys(pattern: _redisChannelPrefix + '*');
+                foreach (var key in keys)
+                {
+                    redis.KeyDelete(key, CommandFlags.FireAndForget);
+                }
+                keys = server.Keys(pattern: _redisMessagePrefix + '*');
                 foreach (var key in keys)
                 {
                     redis.KeyDelete(key, CommandFlags.FireAndForget);
