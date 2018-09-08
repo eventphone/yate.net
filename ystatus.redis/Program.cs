@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using eventphone.yate;
+using eventphone.yate.Messages;
 using Microsoft.Extensions.Configuration;
 using StackExchange.Redis;
 
@@ -34,7 +35,7 @@ namespace ystatus.redis
             var yateConfig = configuration.GetSection("Yate");
             _yate = new YateClient(yateConfig["host"], yateConfig.GetValue<ushort>("port"));
             _yate.Connect();
-
+            Initialize(_yate);
             _yate.Watch("chan.startup", ChanUpdate);
             _yate.Watch("chan.hangup", ChanHangup);
             _yate.Watch("call.ringing", ChanUpdate);
@@ -44,6 +45,25 @@ namespace ystatus.redis
             _yate.Watch("user.auth", UserAuth);
             _yate.Watch("user.register", UserRegister);
             _yate.Watch("user.unregister", UserUnregister);
+        }
+
+        private void Initialize(YateClient client)
+        {
+            var status = client.SendMessage(new EngineStatusSip());
+            if (status.Name != "sip") return;
+            foreach (var detail in status.Details)
+            {
+                if (!detail.TryGetValue("id", out var id))
+                    continue;
+                var hash = new HashEntry[3];
+                if (detail.TryGetValue("Status", out var value))
+                    hash[0] = new HashEntry("status", value);
+                if (detail.TryGetValue("Address", out var address))
+                    hash[1] = new HashEntry("address", address);
+                if (detail.TryGetValue("Peer", out var peer))
+                    hash[2] = new HashEntry("peerid", peer);
+                UpdateRedis(RedisPrefix + id, hash, TimeSpan.FromHours(1));
+            }
         }
 
         private void ChanUpdate(YateMessageEventArgs arg)
