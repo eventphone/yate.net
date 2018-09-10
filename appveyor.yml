@@ -1,0 +1,27 @@
+version: 1.0.{build}
+pull_requests:
+  do_not_increment_build_number: true
+branches:
+  only:
+  - master
+skip_tags: true
+image: Visual Studio 2017
+dotnet_csproj:
+  patch: true
+  file: '**\*.csproj'
+  version: '{version}'
+  package_version: '{version}'
+  assembly_version: '{version}'
+  file_version: '{version}'
+  informational_version: '{version}'
+nuget:
+  disable_publish_on_pr: true
+build_script:
+- cmd: dotnet publish -c Release
+artifacts:
+- path: src\yate\bin\Release\yate.*.nupkg
+  name: yate.nupkg
+- path: src\ystatus\bin\Release\netcoreapp2.1\publish\
+  name: ystatus
+- path: src\ystatus.redis\bin\Release\netcoreapp2.1\publish\
+  name: ystatus.redis
