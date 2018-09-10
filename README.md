@@ -1,5 +1,5 @@
 ## Status
-![build status](https://img.shields.io/badge/build-broken-red.svg)
+[![Build status](https://ci.appveyor.com/api/projects/status/5h20vfal8gu0pb5y/branch/master?svg=true)](https://ci.appveyor.com/project/eventphone/yate-net/branch/master)
 ![tests](https://img.shields.io/badge/tests-none-red.svg)
 ![coverage](https://img.shields.io/badge/coverage-0%25-red.svg)
 ![maintainability](https://img.shields.io/badge/maintainability-F-red.svg)
