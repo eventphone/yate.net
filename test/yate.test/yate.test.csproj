@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\yate\yate.csproj" />
+    <ProjectReference Include="..\..\src\yate\yate.csproj" />
   </ItemGroup>
 
 </Project>

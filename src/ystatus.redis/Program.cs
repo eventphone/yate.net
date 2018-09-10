@@ -7,7 +7,7 @@ using eventphone.yate.Messages;
 using Microsoft.Extensions.Configuration;
 using StackExchange.Redis;
 
-namespace ystatus.redis
+namespace eventphone.ystatus.redis
 {
     class Program:IDisposable
     {
@@ -18,8 +18,10 @@ namespace ystatus.redis
 
         static void Main()
         {
-            var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
-            var configuration = builder.Build();
+            var configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json", optional: true)
+                .Build();
             _redisChannelPrefix = "yate:ystatus:channel:" + Environment.MachineName + ':';
             _redisMessagePrefix = "yate:ystatus:message:" + Environment.MachineName + ':';
             using (var program = new Program(configuration))

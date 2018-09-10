@@ -6,6 +6,8 @@
  * Author: Ben Fuhrmannek <bef@eventphone.de>
  * Date: 2013-12-03
  *
+ * Author: Bianco Veigel <zivillian@eventphone.de> 2018
+ *
  * Copyright (c) 2013-2014, Ben Fuhrmannek
  * All rights reserved.
  */
