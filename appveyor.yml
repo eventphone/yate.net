@@ -17,7 +17,9 @@ dotnet_csproj:
 nuget:
   disable_publish_on_pr: true
 build_script:
-- cmd: dotnet publish -c Release
+- cmd: >-
+    dotnet build -c Release &&
+    dotnet publish -c Release --no-build
 artifacts:
 - path: src\yate\bin\Release\yate.*.nupkg
   name: yate.nupkg
