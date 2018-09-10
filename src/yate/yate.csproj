@@ -8,6 +8,15 @@
   <PropertyGroup>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>zivillian</Authors>
+    <Company>eventphone</Company>
+    <PackageLicenseUrl>https://github.com/eventphone/yate.net/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/eventphone/yate.net</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/eventphone/yate.net.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>yate</PackageTags>
+    <Description>yate client library</Description>
   </PropertyGroup>
 
 </Project>
