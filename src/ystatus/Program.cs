@@ -20,12 +20,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using eventphone.yate;
 using eventphone.yate.Messages;
-using McMaster.Extensions.CommandLineUtils;
+using Mono.Options;
 using TrueColorConsole;
 
 namespace eventphone.ystatus
 {
-    [VersionOptionFromMember(MemberName = nameof(Version))]
     class Program
     {
         public string Version
@@ -33,21 +32,48 @@ namespace eventphone.ystatus
             get { return "0.0.1"; }
         }
 
-        [Option(ShortName = "H", Description = "connect to host")]
         public string Host { get; set; } = "localhost";
 
-        [Option(ShortName = "P", Description = "connect to port")]
         public ushort Port { get; set; } = 5039;
         
-        [Option(ShortName = "cd", Description = "channel remove delay")]
         public uint ChannelDelay { get; set; } = 6000;
 
-        [Option(ShortName = "fd", Description = "flashmessage delay")]
         public uint FlashDelay { get; set; } = 8000;
         
         static void Main(string[] args)
         {
-            CommandLineApplication.Execute<Program>(args);
+            var program = new Program();
+            bool show_help = false;
+            var options = new OptionSet
+            {
+                {"Usage: dotnet ystatus.dll [OPTIONS]"},
+                {"H|host", "connect to host", x => program.Host = x},
+                {"P|port", "connect to port", (ushort x) => program.Port = x},
+                {"cd|channel-delay", "channel remove delay", (uint x) => program.ChannelDelay = x},
+                {"fd|flash-delay", "flashmessage delay", (uint x) => program.FlashDelay = x},
+                {"h|?|help", "print out this message and exit", x => show_help = x != null},
+            };
+            try
+            {
+                var extra = options.Parse(args);
+                if (show_help)
+                {
+                    ShowHelp(options);
+                    return;
+                }
+                program.Execute();
+
+            }
+            catch (OptionException ex)
+            {
+                Console.Error.WriteLine($"Invalid argument: {ex.OptionName}");
+                ShowHelp(options);
+            }
+        }
+
+        private static void ShowHelp(OptionSet options)
+        {
+            options.WriteOptionDescriptions(Console.Error);
         }
 
         public Program()
@@ -56,7 +82,7 @@ namespace eventphone.ystatus
             FlashMessages = new ConcurrentDictionary<Guid, Tuple<string, string>>();
         }
 
-        private void OnExecute()
+        private void Execute()
         {
             VTConsole.Enable();
             VTConsole.SetWindowTitle("Yate Status Monitor");
