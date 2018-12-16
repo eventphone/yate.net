@@ -70,6 +70,7 @@ namespace eventphone.yate
                         throw;
                 }
             }
+            OnDisconnected();
         }
 
         private YateMessageEventArgs GetYateRMessageEventArgs(string[] parts)
@@ -134,6 +135,11 @@ namespace eventphone.yate
             }
         }
 
+        protected virtual void OnDisconnected()
+        {
+            Disconnected?.Invoke(this, EventArgs.Empty);
+        }
+
         private void InvokeWatchCallbacks(object sender, YateMessageEventArgs e)
         {
             if (_watchCallbacks.TryGetValue(e.Name, out var bag))
@@ -147,6 +153,7 @@ namespace eventphone.yate
 
         public event EventHandler<YateMessageEventArgs> MessageReceived;
         public event EventHandler<YateMessageEventArgs> Watched;
+        public event EventHandler Disconnected;
 
         private bool ProcessResponse(string command, string key, string[] values)
         {

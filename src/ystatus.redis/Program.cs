@@ -175,6 +175,7 @@ namespace eventphone.ystatus.redis
                 e.Cancel = true;
                 resetEvent.Set();
             };
+            _yate.Disconnected += (s, e) => { resetEvent.Set(); };
             resetEvent.WaitOne();
         }
 
