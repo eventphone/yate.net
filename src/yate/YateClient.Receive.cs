@@ -19,7 +19,7 @@ namespace eventphone.yate
                 try
                 {
                     var response = reader.ReadLine();
-                    if (response == null) continue;
+                    if (response == null) break;
                     var parts = response.Split(':');
                     parts[0] = _serializer.Decode(parts[0]);
                     switch (parts[0])
