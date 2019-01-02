@@ -18,25 +18,6 @@ namespace eventphone.yate
         private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
         private readonly ConcurrentDictionary<string, ConcurrentBag<Action<YateMessageEventArgs>>> _watchCallbacks;
 
-        private static class Commands
-        {
-            public static readonly string SConnect = "%>connect";
-            public static readonly string SOutput = "%>output";
-            public static readonly string SSetLocal = "%>setlocal";
-            public const string RSetLocal = "%<setlocal";
-            public const string RError = "Error in";
-            public const string SMessage = "%>message";
-            public const string RMessage = "%<message";
-            public static readonly string SInstall = "%>install";
-            public const string RInstall = "%<install";
-            public static readonly string SUninstall = "%>uninstall";
-            public const string RUninstall = "%<uninstall";
-            public static readonly string SWatch = "%>watch";
-            public const string RWatch = "%<watch";
-            public static readonly string SUnwatch = "%>unwatch";
-            public const string RUnwatch = "%<unwatch";
-        }
-
         public YateClient(string host, ushort port)
         {
             _serializer = new YateSerializer();

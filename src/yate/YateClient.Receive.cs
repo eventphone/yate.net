@@ -24,40 +24,40 @@ namespace eventphone.yate
                     parts[0] = _serializer.Decode(parts[0]);
                     switch (parts[0])
                     {
-                        case Commands.RSetLocal:
+                        case YateConstants.RSetLocal:
                             parts[1] = _serializer.Decode(parts[1]);
-                            ProcessResponse(Commands.RSetLocal, parts[1], parts);
+                            ProcessResponse(YateConstants.RSetLocal, parts[1], parts);
                             break;
-                        case Commands.RError:
+                        case YateConstants.RError:
                             OnError(parts[1]);
                             break;
-                        case Commands.RMessage:
+                        case YateConstants.RMessage:
                             parts[1] = _serializer.Decode(parts[1]);
-                            if (!ProcessResponse(Commands.RMessage, parts[1], parts))
+                            if (!ProcessResponse(YateConstants.RMessage, parts[1], parts))
                             {
                                 var message = GetYateRMessageEventArgs(parts);
                                 OnWatch(message);
                             }
                             break;
-                        case Commands.SMessage:
+                        case YateConstants.SMessage:
                             var arg = GetYateSMessageEventArgs(parts);
                             OnMessageReceived(arg);
                             break;
-                        case Commands.RInstall:
+                        case YateConstants.RInstall:
                             parts[2] = _serializer.Decode(parts[2]);
-                            ProcessResponse(Commands.RInstall, parts[2], parts);
+                            ProcessResponse(YateConstants.RInstall, parts[2], parts);
                             break;
-                        case Commands.RUninstall:
+                        case YateConstants.RUninstall:
                             parts[2] = _serializer.Decode(parts[2]);
-                            ProcessResponse(Commands.RUninstall, parts[2], parts);
+                            ProcessResponse(YateConstants.RUninstall, parts[2], parts);
                             break;
-                        case Commands.RWatch:
+                        case YateConstants.RWatch:
                             parts[1] = _serializer.Decode(parts[1]);
-                            ProcessResponse(Commands.RWatch, parts[1], parts);
+                            ProcessResponse(YateConstants.RWatch, parts[1], parts);
                             break;
-                        case Commands.RUnwatch:
+                        case YateConstants.RUnwatch:
                             parts[1] = _serializer.Decode(parts[1]);
-                            ProcessResponse(Commands.RUnwatch, parts[1], parts);
+                            ProcessResponse(YateConstants.RUnwatch, parts[1], parts);
                             break;
                         default:
                             throw new NotImplementedException();
@@ -77,7 +77,7 @@ namespace eventphone.yate
         {
             var resultParams = GetMessageParameter(parts);
             //%%<message:<id>:<processed>:[<name>]:<retvalue>[:<key>=<value>...]
-            return new YateMessageEventArgs(_serializer.Decode(parts[1]), YateTrue.Equals(_serializer.Decode(parts[2]), StringComparison.Ordinal), _serializer.Decode(parts[3]), _serializer.Decode(parts[4]), resultParams);
+            return new YateMessageEventArgs(_serializer.Decode(parts[1]), YateConstants.True.Equals(_serializer.Decode(parts[2]), StringComparison.Ordinal), _serializer.Decode(parts[3]), _serializer.Decode(parts[4]), resultParams);
         }
 
         private YateMessageEventArgs GetYateSMessageEventArgs(string[] parts)
@@ -111,9 +111,9 @@ namespace eventphone.yate
             }
             var commands = new List<string>
             {
-                Commands.RMessage,
+                YateConstants.RMessage,
                 message.Id,
-                message.Handled ? YateTrue : YateFalse,
+                message.Handled ? YateConstants.True : YateConstants.False,
                 message.Name,
                 message.Result
             };

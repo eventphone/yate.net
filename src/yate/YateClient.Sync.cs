@@ -56,7 +56,7 @@ namespace eventphone.yate
             }
             _reader = new Thread(Read) {IsBackground = true, Name = "YateClientReader"};
             _reader.Start();
-            Send(Command(Commands.SConnect, roleType, channelId, channelType));
+            Send(Command(YateConstants.SConnect, roleType, channelId, channelType));
         }
 
         /// <summary>
@@ -64,7 +64,7 @@ namespace eventphone.yate
         /// </summary>
         public void Log(string message)
         {
-            Send(Command(Commands.SOutput) + ':' + message);
+            Send(Command(YateConstants.SOutput) + ':' + message);
         }
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace eventphone.yate
         /// </summary>
         public string SetLocal(string parameter, string value)
         {
-            var result = Send(Commands.RSetLocal, parameter, Commands.SSetLocal, parameter, value);
+            var result = Send(YateConstants.RSetLocal, parameter, YateConstants.SSetLocal, parameter, value);
             return _serializer.Decode(result[2]);
         }
 
@@ -95,7 +95,7 @@ namespace eventphone.yate
         {
             string id = Guid.NewGuid().ToString();
             var time = DateTimeOffset.Now.ToUnixTimeSeconds().ToString();
-            var response = Send(Commands.RMessage, id, parameter, Commands.SMessage, id, time, name, result);
+            var response = Send(YateConstants.RMessage, id, parameter, YateConstants.SMessage, id, time, name, result);
             var resultParams = new List<Tuple<string, string>>();
             for (int i = 5; i < response.Length; i++)
             {
@@ -104,7 +104,7 @@ namespace eventphone.yate
             return new YateMessageResponse
             {
                 Id = response[1],
-                Handled = YateTrue.Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase),
+                Handled = YateConstants.True.Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase),
                 Name = _serializer.Decode(response[3]),
                 Result = _serializer.Decode(response[4]),
                 Parameter = resultParams
@@ -139,33 +139,33 @@ namespace eventphone.yate
 
         public InstallResult Uninstall(string name)
         {
-            var result = Send(Commands.RUninstall, name, Commands.SUninstall, name);
+            var result = Send(YateConstants.RUninstall, name, YateConstants.SUninstall, name);
             return new InstallResult(_serializer.Decode(result[1]), _serializer.Decode(result[3]));
         }
 
         public bool Watch(string name)
         {
-            var result = Send(Commands.RWatch, name, Commands.SWatch, name);
-            return YateTrue.Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
+            var result = Send(YateConstants.RWatch, name, YateConstants.SWatch, name);
+            return YateConstants.True.Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
         }
 
         public bool Watch(string name, Action<YateMessageEventArgs> callback)
         {
             var bag = _watchCallbacks.GetOrAdd(name, new ConcurrentBag<Action<YateMessageEventArgs>>());
             bag.Add(callback);
-            var response = Send(Commands.RWatch, name, Commands.SWatch, name);
-            return YateTrue.Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase);
+            var response = Send(YateConstants.RWatch, name, YateConstants.SWatch, name);
+            return YateConstants.True.Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase);
         }
 
         public bool Unwatch(string name)
         {
-            var result = Send(Commands.RUnwatch, name, Commands.SUnwatch, name);
-            return YateTrue.Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
+            var result = Send(YateConstants.RUnwatch, name, YateConstants.SUnwatch, name);
+            return YateConstants.True.Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
         }
 
         private InstallResult Install(int? priority, string name, string filterName, string filterValue)
         {
-            var result = Send(Commands.RInstall, name, Commands.SInstall, priority?.ToString() ?? String.Empty, name,
+            var result = Send(YateConstants.RInstall, name, YateConstants.SInstall, priority?.ToString() ?? String.Empty, name,
                 filterName, filterValue);
             return new InstallResult(_serializer.Decode(result[1]), _serializer.Decode(result[3]));
         }

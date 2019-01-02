@@ -10,8 +10,6 @@ namespace eventphone.yate
 {
     public partial class YateClient
     {
-        private const string YateTrue = "true";
-        private const string YateFalse = "false";
 
         /// <summary>
         /// As the conection is initiated from the external module the engine must be informed on the role of the connection.
@@ -86,7 +84,7 @@ namespace eventphone.yate
             }
             _reader = new Thread(Read) {IsBackground = true, Name = "YateClientReader"};
             _reader.Start();
-            await SendAsync(Command(Commands.SConnect, roleType, channelId, channelType), cancellationToken).ConfigureAwait(false);
+            await SendAsync(Command(YateConstants.SConnect, roleType, channelId, channelType), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -94,7 +92,7 @@ namespace eventphone.yate
         /// </summary>
         public Task LogAsync(string message, CancellationToken cancellationToken)
         {
-            return SendAsync(Command(Commands.SOutput) + ':' + message, cancellationToken);
+            return SendAsync(Command(YateConstants.SOutput) + ':' + message, cancellationToken);
         }
 
         /// <summary>
@@ -110,7 +108,7 @@ namespace eventphone.yate
         /// </summary>
         public async Task<string> SetLocalAsync(string parameter, string value, CancellationToken cancellationToken)
         {
-            var result = await SendAsync(Commands.RSetLocal, parameter, cancellationToken, Commands.SSetLocal, parameter, value).ConfigureAwait(false);
+            var result = await SendAsync(YateConstants.RSetLocal, parameter, cancellationToken, YateConstants.SSetLocal, parameter, value).ConfigureAwait(false);
             return _serializer.Decode(result[2]);
         }
 
@@ -125,7 +123,7 @@ namespace eventphone.yate
         {
             string id = Guid.NewGuid().ToString();
             var time = DateTimeOffset.Now.ToUnixTimeSeconds().ToString();
-            var response = await SendAsync(Commands.RMessage, id, cancellationToken, parameter, Commands.SMessage, id, time, name, result).ConfigureAwait(false);
+            var response = await SendAsync(YateConstants.RMessage, id, cancellationToken, parameter, YateConstants.SMessage, id, time, name, result).ConfigureAwait(false);
             var resultParams = new List<Tuple<string, string>>();
             for (int i = 5; i < response.Length; i++)
             {
@@ -134,7 +132,7 @@ namespace eventphone.yate
             return new YateMessageResponse
             {
                 Id = response[1],
-                Handled = YateTrue.Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase),
+                Handled = YateConstants.True.Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase),
                 Name = _serializer.Decode(response[3]),
                 Result = _serializer.Decode(response[4]),
                 Parameter = resultParams
@@ -169,33 +167,33 @@ namespace eventphone.yate
 
         public async Task<InstallResult> UninstallAsync(string name, CancellationToken cancellationToken)
         {
-            var result = await SendAsync(Commands.RUninstall, name, cancellationToken, Commands.SUninstall, name).ConfigureAwait(false);
+            var result = await SendAsync(YateConstants.RUninstall, name, cancellationToken, YateConstants.SUninstall, name).ConfigureAwait(false);
             return new InstallResult(_serializer.Decode(result[1]), _serializer.Decode(result[3]));
         }
 
         public async Task<bool> WatchAsync(string name, CancellationToken cancellationToken)
         {
-            var result = await SendAsync(Commands.RWatch, name, cancellationToken, Commands.SWatch, name).ConfigureAwait(false);
-            return YateTrue.Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
+            var result = await SendAsync(YateConstants.RWatch, name, cancellationToken, YateConstants.SWatch, name).ConfigureAwait(false);
+            return YateConstants.True.Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
         }
 
         public async Task<bool> WatchAsync(string name, Action<YateMessageEventArgs> callback, CancellationToken cancellationToken)
         {
             var bag = _watchCallbacks.GetOrAdd(name, new ConcurrentBag<Action<YateMessageEventArgs>>());
             bag.Add(callback);
-            var response = await SendAsync(Commands.RWatch, name, cancellationToken, Commands.SWatch, name).ConfigureAwait(false);
-            return YateTrue.Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase);
+            var response = await SendAsync(YateConstants.RWatch, name, cancellationToken, YateConstants.SWatch, name).ConfigureAwait(false);
+            return YateConstants.True.Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase);
         }
 
         public async Task<bool> UnwatchAsync(string name, CancellationToken cancellationToken)
         {
-            var result = await SendAsync(Commands.RUnwatch, name, cancellationToken, Commands.SUnwatch, name).ConfigureAwait(false);
-            return YateTrue.Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
+            var result = await SendAsync(YateConstants.RUnwatch, name, cancellationToken, YateConstants.SUnwatch, name).ConfigureAwait(false);
+            return YateConstants.True.Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task<InstallResult> InstallAsync(int? priority, string name, string filterName, string filterValue, CancellationToken cancellationToken)
         {
-            var result = await SendAsync(Commands.RInstall, name, cancellationToken, Commands.SInstall, priority?.ToString() ?? String.Empty, name, filterName, filterValue).ConfigureAwait(false);
+            var result = await SendAsync(YateConstants.RInstall, name, cancellationToken, YateConstants.SInstall, priority?.ToString() ?? String.Empty, name, filterName, filterValue).ConfigureAwait(false);
             return new InstallResult(_serializer.Decode(result[1]), _serializer.Decode(result[3]));
         }
 
