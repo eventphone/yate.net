@@ -104,7 +104,7 @@ namespace eventphone.yate
             return new YateMessageResponse
             {
                 Id = response[1],
-                Handled = "true".Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase),
+                Handled = YateTrue.Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase),
                 Name = _serializer.Decode(response[3]),
                 Result = _serializer.Decode(response[4]),
                 Parameter = resultParams
@@ -146,7 +146,7 @@ namespace eventphone.yate
         public bool Watch(string name)
         {
             var result = Send(Commands.RWatch, name, Commands.SWatch, name);
-            return "true".Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
+            return YateTrue.Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
         }
 
         public bool Watch(string name, Action<YateMessageEventArgs> callback)
@@ -154,13 +154,13 @@ namespace eventphone.yate
             var bag = _watchCallbacks.GetOrAdd(name, new ConcurrentBag<Action<YateMessageEventArgs>>());
             bag.Add(callback);
             var response = Send(Commands.RWatch, name, Commands.SWatch, name);
-            return "true".Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase);
+            return YateTrue.Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase);
         }
 
         public bool Unwatch(string name)
         {
             var result = Send(Commands.RUnwatch, name, Commands.SUnwatch, name);
-            return "true".Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
+            return YateTrue.Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
         }
 
         private InstallResult Install(int? priority, string name, string filterName, string filterValue)

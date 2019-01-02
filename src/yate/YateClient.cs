@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace eventphone.yate
 {
@@ -17,8 +13,8 @@ namespace eventphone.yate
         private readonly string _host;
         private readonly ushort _port;
         private Thread _reader;
-        private bool _isclosed = false;
-        private ConcurrentDictionary<string, YateResponse> _eventQueue = new ConcurrentDictionary<string, YateResponse>();
+        private bool _isclosed;
+        private readonly ConcurrentDictionary<string, YateResponse> _eventQueue = new ConcurrentDictionary<string, YateResponse>();
         private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
         private readonly ConcurrentDictionary<string, ConcurrentBag<Action<YateMessageEventArgs>>> _watchCallbacks;
 
@@ -62,11 +58,11 @@ namespace eventphone.yate
         }
 
         #region IDisposable Support
-        private bool disposedValue = false;
+        private bool _disposed;
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!_disposed)
             {
                 if (disposing)
                 {
@@ -74,7 +70,7 @@ namespace eventphone.yate
                     _client.Dispose();
                     _reader?.Join();
                 }
-                disposedValue = true;
+                _disposed = true;
             }
         }
         

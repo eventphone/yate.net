@@ -10,6 +10,9 @@ namespace eventphone.yate
 {
     public partial class YateClient
     {
+        private const string YateTrue = "true";
+        private const string YateFalse = "false";
+
         /// <summary>
         /// As the conection is initiated from the external module the engine must be informed on the role of the connection.
         /// This must be the first request sent over a newly established socket connection.
@@ -131,7 +134,7 @@ namespace eventphone.yate
             return new YateMessageResponse
             {
                 Id = response[1],
-                Handled = "true".Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase),
+                Handled = YateTrue.Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase),
                 Name = _serializer.Decode(response[3]),
                 Result = _serializer.Decode(response[4]),
                 Parameter = resultParams
@@ -173,7 +176,7 @@ namespace eventphone.yate
         public async Task<bool> WatchAsync(string name, CancellationToken cancellationToken)
         {
             var result = await SendAsync(Commands.RWatch, name, cancellationToken, Commands.SWatch, name).ConfigureAwait(false);
-            return "true".Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
+            return YateTrue.Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
         }
 
         public async Task<bool> WatchAsync(string name, Action<YateMessageEventArgs> callback, CancellationToken cancellationToken)
@@ -181,13 +184,13 @@ namespace eventphone.yate
             var bag = _watchCallbacks.GetOrAdd(name, new ConcurrentBag<Action<YateMessageEventArgs>>());
             bag.Add(callback);
             var response = await SendAsync(Commands.RWatch, name, cancellationToken, Commands.SWatch, name).ConfigureAwait(false);
-            return "true".Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase);
+            return YateTrue.Equals(_serializer.Decode(response[2]), StringComparison.OrdinalIgnoreCase);
         }
 
         public async Task<bool> UnwatchAsync(string name, CancellationToken cancellationToken)
         {
             var result = await SendAsync(Commands.RUnwatch, name, cancellationToken, Commands.SUnwatch, name).ConfigureAwait(false);
-            return "true".Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
+            return YateTrue.Equals(_serializer.Decode(result[2]), StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task<InstallResult> InstallAsync(int? priority, string name, string filterName, string filterValue, CancellationToken cancellationToken)

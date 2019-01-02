@@ -77,7 +77,7 @@ namespace eventphone.yate
         {
             var resultParams = GetMessageParameter(parts);
             //%%<message:<id>:<processed>:[<name>]:<retvalue>[:<key>=<value>...]
-            return new YateMessageEventArgs(_serializer.Decode(parts[1]), _serializer.Decode(parts[2])=="true", _serializer.Decode(parts[3]), _serializer.Decode(parts[4]), resultParams);
+            return new YateMessageEventArgs(_serializer.Decode(parts[1]), YateTrue.Equals(_serializer.Decode(parts[2]), StringComparison.Ordinal), _serializer.Decode(parts[3]), _serializer.Decode(parts[4]), resultParams);
         }
 
         private YateMessageEventArgs GetYateSMessageEventArgs(string[] parts)
@@ -113,7 +113,7 @@ namespace eventphone.yate
             {
                 Commands.RMessage,
                 message.Id,
-                message.Handled ? "true" : "false",
+                message.Handled ? YateTrue : YateFalse,
                 message.Name,
                 message.Result
             };
