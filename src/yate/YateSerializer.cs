@@ -52,11 +52,11 @@ namespace eventphone.yate
                 {
                     if (input.Length == i + 1)
                     {
-                        throw new YateException(message);
+                        throw new MessageParseException(message);
                     }
                     if (input[i + 1] != '%' && (int) input[i + 1] <= 64)
                     {
-                        throw new YateException(message);
+                        throw new MessageParseException(message);
                     }
                     if (i > 0)
                     {
