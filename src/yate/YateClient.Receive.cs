@@ -13,7 +13,7 @@ namespace eventphone.yate
     {
         private void Read()
         {
-            using (var reader = new StreamReader(_client.GetStream(), Encoding.UTF8))
+            using (var reader = new StreamReader(InputStream, Encoding.UTF8))
             while (!_isclosed)
             {
                 try

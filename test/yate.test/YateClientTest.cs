@@ -232,6 +232,12 @@ namespace eventphone.yate.test
             SendMessage(response);
         }
 
+        public void ReplyToMessage(Func<string,bool> expected, string response)
+        {
+            AckMessage(expected);
+            SendMessage(response);
+        }
+
         public void ReplyToMessage(Func<string,bool> expected, Func<string> response)
         {
             AckMessage(expected);

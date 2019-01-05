@@ -60,6 +60,11 @@ namespace eventphone.yate
         /// </remarks>
         public async Task ConnectAsync(RoleType role, string channelId, string channelType, CancellationToken cancellationToken)
         {
+            if (_client == null)
+            {
+                StartReader();
+                return;
+            }    
             await _client.ConnectAsync(_host, _port).ConfigureAwait(false);
             string roleType;
             switch (role)
@@ -82,8 +87,8 @@ namespace eventphone.yate
                 default:
                     throw new ArgumentOutOfRangeException(nameof(role));
             }
-            _reader = new Thread(Read) {IsBackground = true, Name = "YateClientReader"};
-            _reader.Start();
+            InputStream = OutputStream = _client.GetStream();
+            StartReader();
             await SendAsync(Command(YateConstants.SConnect, roleType, channelId, channelType), cancellationToken).ConfigureAwait(false);
         }
 
@@ -160,6 +165,11 @@ namespace eventphone.yate
             return InstallAsync(null, name, filterName, filterValue, cancellationToken);
         }
 
+        public Task<InstallResult> InstallAsync(int priority, string name,  CancellationToken cancellationToken)
+        {
+            return InstallAsync((int?) priority, name, null, null, cancellationToken);
+        }
+
         public Task<InstallResult> InstallAsync(int priority, string name, string filterName, string filterValue, CancellationToken cancellationToken)
         {
             return InstallAsync((int?) priority, name, filterName, filterValue, cancellationToken);
@@ -223,9 +233,8 @@ namespace eventphone.yate
             await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                var stream = _client.GetStream();
-                await stream.WriteAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
-                await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                await OutputStream.WriteAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
+                await OutputStream.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
             finally
             {

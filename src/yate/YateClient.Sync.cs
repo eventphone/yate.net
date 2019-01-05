@@ -32,6 +32,11 @@ namespace eventphone.yate
         /// </remarks>
         public void Connect(RoleType role, string channelId = null, string channelType = null)
         {
+            if (_client == null)
+            {
+                StartReader();
+                return;
+            }
             _client.Connect(_host, _port);
             string roleType;
             switch (role)
@@ -54,8 +59,8 @@ namespace eventphone.yate
                 default:
                     throw new ArgumentOutOfRangeException(nameof(role));
             }
-            _reader = new Thread(Read) {IsBackground = true, Name = "YateClientReader"};
-            _reader.Start();
+            InputStream = OutputStream = _client.GetStream();
+            StartReader();
             Send(Command(YateConstants.SConnect, roleType, channelId, channelType));
         }
 
@@ -132,6 +137,11 @@ namespace eventphone.yate
             return Install(null, name, filterName, filterValue);
         }
 
+        public InstallResult Install(int priority, string name)
+        {
+            return Install((int?) priority, name, null, null);
+        }
+
         public InstallResult Install(int priority, string name, string filterName, string filterValue)
         {
             return Install((int?) priority, name, filterName, filterValue);
@@ -196,9 +206,8 @@ namespace eventphone.yate
             _writeLock.Wait();
             try
             {
-                var stream = _client.GetStream();
-                stream.Write(buffer, 0, buffer.Length);
-                stream.Flush();
+                OutputStream.Write(buffer, 0, buffer.Length);
+                OutputStream.Flush();
             }
             finally
             {
