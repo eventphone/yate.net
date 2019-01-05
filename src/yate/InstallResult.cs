@@ -14,7 +14,7 @@ namespace eventphone.yate
             {
                 Priority = -1;
             }
-            Success = "true".Equals(success, StringComparison.OrdinalIgnoreCase);
+            Success = YateConstants.True.Equals(success, StringComparison.OrdinalIgnoreCase);
         }
 
         public readonly int Priority;

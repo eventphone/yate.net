@@ -51,7 +51,24 @@ namespace eventphone.yate
 
         private string Command(params string[] parameter)
         {
-            return String.Join(":", parameter.Where(x => x != null).Select(x => _serializer.Encode(x)));
+            var length = 0;
+            for (int i = 0; i < parameter.Length; i++)
+            {
+                if (parameter[i] == null) continue;
+                parameter[i] = _serializer.Encode(parameter[i]);
+                length += parameter[i].Length + 1;
+            }
+            if (length == 0) return String.Empty;
+            Span<char> result = stackalloc char[length];
+            var target = result;
+            for (int i = 0; i < parameter.Length; i++)
+            {
+                if (parameter[i] == null) continue;
+                parameter[i].AsSpan().CopyTo(target);
+                target[parameter[i].Length] = ':';
+                target = target.Slice(parameter[i].Length+1);
+            }
+            return result.Slice(0, result.Length - 1).ToString();
         }
 
         #region IDisposable Support

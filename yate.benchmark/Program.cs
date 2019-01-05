@@ -11,6 +11,9 @@ namespace yate.benchmark
         static Program()
         {
             AddBenchmark<DecodeBenchmark>();
+            AddBenchmark<EncodeBenchmark>();
+            AddBenchmark<StringSplitBenchmark>();
+            AddBenchmark<StringJoinBenchmark>();
         }
 
         private static void AddBenchmark<T>()

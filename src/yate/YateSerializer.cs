@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -16,10 +17,14 @@ namespace eventphone.yate
 
         public string Encode(string message)
         {
-            var sb = new StringBuilder(message.Length);
             int i;
             int index = 0;
-            while((i = message.IndexOfAny(SpecialChars, index)) >= 0)
+            if ((i = message.IndexOfAny(SpecialChars, index)) < 0)
+            {
+                return message;
+            }
+            var sb = new StringBuilder(message.Length);
+            do
             {
                 if (index < i)
                 {
@@ -32,10 +37,10 @@ namespace eventphone.yate
                 }
                 else
                 {
-                    sb.Append((char)(message[i] + 64));
+                    sb.Append((char) (message[i] + 64));
                 }
                 index = i + 1;
-            }
+            } while ((i = message.IndexOfAny(SpecialChars, index)) >= 0);
             sb.Append(message, index, message.Length - index);
             return sb.ToString();
         }
