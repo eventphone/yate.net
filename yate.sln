@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ystatus.redis", "src\ystatu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "yate.test", "test\yate.test\yate.test.csproj", "{D2D89E7A-2D75-49D6-AFAD-129BF38A19CE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "yate.benchmark", "yate.benchmark\yate.benchmark.csproj", "{0BF65DDB-2C9F-4A5F-983C-589FFB87BE0F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{D2D89E7A-2D75-49D6-AFAD-129BF38A19CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D2D89E7A-2D75-49D6-AFAD-129BF38A19CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D2D89E7A-2D75-49D6-AFAD-129BF38A19CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0BF65DDB-2C9F-4A5F-983C-589FFB87BE0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0BF65DDB-2C9F-4A5F-983C-589FFB87BE0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0BF65DDB-2C9F-4A5F-983C-589FFB87BE0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0BF65DDB-2C9F-4A5F-983C-589FFB87BE0F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

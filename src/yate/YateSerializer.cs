@@ -42,29 +42,44 @@ namespace eventphone.yate
 
         public string Decode(string message)
         {
-            var sb = new StringBuilder(message.Length);
+            var input = message.AsSpan();
             int i;
-            int index = 0;
-            while((i = message.IndexOf('%', index)) >= 0)
+            if((i = input.IndexOf('%')) >= 0)
             {
-                if (message.Length == i + 1)
-                    throw new MessageParseException(message);
-                if (message[i + 1] != '%' && (int)message[i + 1] <= 64)
-                    throw new MessageParseException(message);
-                if (index < i)
-                    sb.Append(message, index, i - index);
-                if (message[i + 1] == '%')
+                Span<char> buffer = stackalloc char[input.Length];
+                var target = buffer.Slice(0);
+                do
                 {
-                    sb.Append('%');
-                }
-                else
-                {
-                    sb.Append((char)(message[i + 1] - 64));
-                }
-                index = i + 2;
+                    if (input.Length == i + 1)
+                    {
+                        throw new YateException(message);
+                    }
+                    if (input[i + 1] != '%' && (int) input[i + 1] <= 64)
+                    {
+                        throw new YateException(message);
+                    }
+                    if (i > 0)
+                    {
+                        input.Slice(0, i).CopyTo(target);
+                        target = target.Slice(i);
+                    }
+                    if (input[i + 1] == '%')
+                    {
+                        target[0] = '%';
+                        target = target.Slice(1);
+                    }
+                    else
+                    {
+                        target[0] = (char) (input[i + 1] - 64);
+                        target = target.Slice(1);
+                    }
+                    input = input.Slice(i + 2);
+                } while ((i = input.IndexOf('%')) >= 0);
+                
+                input.CopyTo(target);
+                return buffer.Slice(0, buffer.Length - target.Length + input.Length).ToString();
             }
-            sb.Append(message, index, message.Length - index);
-            return sb.ToString();
+            return message;
         }
 
         public string Encode(Tuple<string,string> parameter)
