@@ -40,7 +40,7 @@ namespace eventphone.yate
 
         private void StartReader()
         {
-            _reader = new Thread(Read) {IsBackground = true, Name = "YateClientReader"};
+            _reader = new Thread(()=>ReadAsync(CancellationToken.None).GetAwaiter().GetResult()) {IsBackground = true, Name = "YateClientReader"};
             _reader.Start();
         }
 

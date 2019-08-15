@@ -11,14 +11,42 @@ namespace eventphone.yate
 {
     public partial class YateClient
     {
-        private void Read()
+        private async Task ReadAsync(CancellationToken cancellationToken)
         {
+            var cancelTask = Task.Delay(Timeout.Infinite, cancellationToken);
+            var tasks = new List<Task> {cancelTask};
             using (var reader = new StreamReader(InputStream, Encoding.UTF8))
             while (!_isclosed)
             {
                 try
                 {
-                    var response = reader.ReadLine();
+                    var responseTask = reader.ReadLineAsync();
+                    tasks.Add(responseTask);
+                    var completed = await Task.WhenAny(tasks).ConfigureAwait(false);
+                    while (completed != responseTask)
+                    {
+                        if (completed.Status != TaskStatus.RanToCompletion)
+                        {
+                            if (completed == cancelTask)
+                            {
+                                await completed;
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    await completed;
+                                }
+                                catch (Exception ex)
+                                {
+                                    tasks.Add(LogAsync(ex.Message, cancellationToken));
+                                }
+                            }
+                        }
+                        tasks.Remove(completed);
+                        completed = await Task.WhenAny(tasks).ConfigureAwait(false);
+                    }
+                    var response = await responseTask;
                     if (response == null) break;
                     var parts = response.Split(':');
                     parts[0] = _serializer.Decode(parts[0]);
@@ -41,7 +69,7 @@ namespace eventphone.yate
                             break;
                         case YateConstants.SMessage:
                             var arg = GetYateSMessageEventArgs(parts);
-                            OnMessageReceived(arg);
+                            tasks.Add(OnMessageReceived(arg, cancellationToken));
                             break;
                         case YateConstants.RInstall:
                             parts[2] = _serializer.Decode(parts[2]);
@@ -66,8 +94,11 @@ namespace eventphone.yate
                 catch (IOException ex)
                 {
                     var socketExept = ex.InnerException as SocketException;
-                    if (socketExept == null || socketExept.ErrorCode != 10004)
+                    if (socketExept == null || (socketExept.ErrorCode != 10004 && socketExept.ErrorCode != 995))
+                    {
+                        OnDisconnected();
                         throw;
+                    }
                 }
             }
             OnDisconnected();
@@ -98,16 +129,17 @@ namespace eventphone.yate
             return resultParams;
         }
 
-        protected virtual void OnMessageReceived(YateMessageEventArgs message)
+        protected virtual async Task OnMessageReceived(YateMessageEventArgs message, CancellationToken cancellationToken)
         {
-            var handler = MessageReceived;
+            var handler = MessageReceivedAsync;
+            if (handler != null)
             try
             {
-                handler?.Invoke(this, message);
+                await handler(message).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                LogAsync(ex.Message, CancellationToken.None).GetAwaiter().GetResult();
+                await LogAsync(ex.Message, cancellationToken).ConfigureAwait(false);
             }
             var commands = new List<string>
             {
@@ -117,9 +149,12 @@ namespace eventphone.yate
                 message.Name,
                 message.Result
             };
-            commands.AddRange(message.NewParameter.Select(x => _serializer.Encode(x)));
+            if (handler != null)
+            {
+                commands.AddRange(message.NewParameter.Select(x => _serializer.Encode(x)));
+            }
             var response = Command(commands.ToArray());
-            SendAsync(response, CancellationToken.None).GetAwaiter().GetResult();
+            await SendAsync(response, cancellationToken).ConfigureAwait(false);
         }
 
         protected virtual void OnWatch(YateMessageEventArgs message)
@@ -151,7 +186,7 @@ namespace eventphone.yate
             }
         }
 
-        public event EventHandler<YateMessageEventArgs> MessageReceived;
+        public Func<YateMessageEventArgs, Task<bool>> MessageReceivedAsync;
         public event EventHandler<YateMessageEventArgs> Watched;
         public event EventHandler Disconnected;
 

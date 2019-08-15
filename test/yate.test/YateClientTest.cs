@@ -60,7 +60,7 @@ namespace eventphone.yate.test
         {
             await _testClient.ConnectAsync(RoleType.Global, CancellationToken.None);
             _server.AckConnect();
-            _testClient.MessageReceived += (s, e) => throw new NotImplementedException("foo");
+            _testClient.MessageReceivedAsync += (e) => throw new NotImplementedException("foo");
             _server.SendMessage("%%>message:123:321:test:false:name=value");
             _server.AckMessage("%%>output:foo");
             _server.AckMessage("%%<message:123:false:test:false");
