@@ -17,7 +17,7 @@ dotnet_csproj:
 nuget:
   disable_publish_on_pr: true
 build_script:
-- cmd: >-
+- sh: >-
     dotnet build -c Release &&
     dotnet publish -c Release --no-build
 artifacts:
