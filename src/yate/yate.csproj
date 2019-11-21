@@ -11,7 +11,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>zivillian</Authors>
     <Company>eventphone</Company>
-    <PackageLicenseUrl>https://github.com/eventphone/yate.net/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/eventphone/yate.net</PackageProjectUrl>
     <RepositoryUrl>https://github.com/eventphone/yate.net.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -21,7 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Memory" Version="4.5.1" />
+    <PackageReference Include="System.Memory" Version="4.5.3" />
   </ItemGroup>
 
 </Project>

@@ -5,7 +5,7 @@ branches:
   only:
   - master
 skip_tags: true
-image: Visual Studio 2017
+image: Ubuntu1804
 dotnet_csproj:
   patch: true
   file: '**\*.csproj'
@@ -23,7 +23,7 @@ build_script:
 artifacts:
 - path: src\yate\bin\Release\yate.*.nupkg
   name: yate.nupkg
-- path: src\ystatus\bin\Release\netcoreapp2.1\publish\
+- path: src\ystatus\bin\Release\netcoreapp3.0\publish\
   name: ystatus
-- path: src\ystatus.redis\bin\Release\netcoreapp2.1\publish\
+- path: src\ystatus.redis\bin\Release\netcoreapp3.0\publish\
   name: ystatus.redis
