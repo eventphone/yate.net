@@ -33,7 +33,7 @@ namespace eventphone.ystatus.redis
         private Program(IConfigurationRoot configuration)
         {
             var redis = configuration.GetConnectionString("redis");
-            _redis = ConnectionMultiplexer.Connect(redis, Console.Out);
+            _redis = ConnectionMultiplexer.Connect(redis, null);
             Clear();
 
             var yateConfig = configuration.GetSection("Yate");
